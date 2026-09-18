@@ -1,0 +1,108 @@
+---
+# Backend Deployment - a tiny Python HTTP server that prints back the
+# values it received from the ConfigMap and the Secret, so the whole
+# Ingress -> Service -> Pod -> config chain can be proven with one curl.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bazaar-backend
+  namespace: default
+  labels:
+    app: bazaar-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bazaar-backend
+  template:
+    metadata:
+      labels:
+        app: bazaar-backend
+    spec:
+      containers:
+        - name: catalog-api
+          image: python:3.11-alpine3.19
+          command:
+            - "sh"
+            - "-c"
+            - |
+              python3 -c "
+              import os
+              from http.server import HTTPServer, BaseHTTPRequestHandler
+
+              class ConfigEchoHandler(BaseHTTPRequestHandler):
+                  def log_message(self, fmt, *a):
+                      pass
+                  def do_GET(self):
+                      runtime  = os.getenv('RUNTIME_ENV',   'unknown')
+                      loglevel = os.getenv('LOG_LEVEL',     'unknown')
+                      currency = os.getenv('BASE_CURRENCY', 'unknown')
+                      cart_max = os.getenv('MAX_CART_ITEMS','unknown')
+                      db_user  = os.getenv('DB_USERNAME',   'unknown')
+                      db_name  = os.getenv('DB_NAME',       'unknown')
+                      payload = (
+                          \"Abhi's Bazaar Catalog API\n\"
+                          '=========================\n'
+                          f'RUNTIME_ENV   : {runtime}\n'
+                          f'LOG_LEVEL     : {loglevel}\n'
+                          f'BASE_CURRENCY : {currency}\n'
+                          f'MAX_CART_ITEMS: {cart_max}\n'
+                          f'DB_USERNAME   : {db_user}\n'
+                          f'DB_NAME       : {db_name}\n'
+                      ).encode()
+                      self.send_response(200)
+                      self.send_header('Content-Type', 'text/plain')
+                      self.send_header('Content-Length', str(len(payload)))
+                      self.end_headers()
+                      self.wfile.write(payload)
+
+              HTTPServer(('0.0.0.0', 5000), ConfigEchoHandler).serve_forever()
+              "
+          ports:
+            - containerPort: 5000
+          # Style 1: every key of the ConfigMap becomes an env var
+          envFrom:
+            - configMapRef:
+                name: bazaar-app-config
+          # Style 2: one named key at a time out of the Secret
+          env:
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: bazaar-db-secret
+                  key: DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bazaar-db-secret
+                  key: DB_PASSWORD
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: bazaar-db-secret
+                  key: DB_NAME
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+---
+# Backend ClusterIP Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: bazaar-backend-service
+  namespace: default
+  labels:
+    app: bazaar-backend
+spec:
+  type: ClusterIP
+  selector:
+    app: bazaar-backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000
+      protocol: TCP

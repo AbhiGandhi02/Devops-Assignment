@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: site-extlb
+  labels:
+    app: site-extlb
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: site-extlb
+  template:
+    metadata:
+      labels:
+        app: site-extlb
+    spec:
+      containers:
+        - name: web-node
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"

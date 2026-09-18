@@ -1,0 +1,37 @@
+# Deployment revision 1. maxUnavailable: 1 -> one Pod may be missing mid-update.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orbit-api
+  labels:
+    app: orbit-api
+    release: "1.2.0"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: orbit-api
+  template:
+    metadata:
+      labels:
+        app: orbit-api
+        release: "1.2.0"
+    spec:
+      containers:
+        - name: api-server
+          image: python:3.11-alpine3.19
+          command: ["python3", "-c", "import http.server; print('orbit-api release 1.2.0 listening on 5000'); http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler, port=5000)"]
+          ports:
+            - containerPort: 5000
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"

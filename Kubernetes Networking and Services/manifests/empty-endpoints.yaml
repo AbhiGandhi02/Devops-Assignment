@@ -1,0 +1,19 @@
+# =============================================================================
+# DELIBERATELY BROKEN SERVICE - endpoint troubleshooting drill
+# The selector below says app: api-typo-name, but the running API Pods are
+# labelled app: site-internal. Nothing matches, so the EndpointSlice stays
+# empty and every request to this Service fails - with no error at apply time.
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: misconfigured-api-svc
+spec:
+  type: ClusterIP
+  selector:
+    app: api-typo-name        # BUG: no Pod carries this label
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000
+      protocol: TCP

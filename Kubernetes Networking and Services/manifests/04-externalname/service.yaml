@@ -1,0 +1,9 @@
+# ExternalName: no selector, no Pods, no ClusterIP.
+# CoreDNS just answers with a CNAME to the external hostname.
+apiVersion: v1
+kind: Service
+metadata:
+  name: remote-db-alias
+spec:
+  type: ExternalName
+  externalName: external-db.example.com

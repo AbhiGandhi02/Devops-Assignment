@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Build output
+build/
+dist/
+
+# Local scratch / downloads from the networking tasks
+index.html.*
+*.log

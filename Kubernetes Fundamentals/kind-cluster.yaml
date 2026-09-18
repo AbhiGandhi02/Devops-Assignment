@@ -1,0 +1,27 @@
+# Local 2-node Kubernetes cluster used for all four Kubernetes sections.
+# Cluster name "abhi-devops" -> node containers are named
+#   abhi-devops-control-plane  and  abhi-devops-worker
+#
+# The control-plane node is labelled ingress-ready=true and its ports 80/443
+# are published on the laptop as 8088/8448, so the NGINX Ingress controller
+# used in the "Kubernetes Ingress ConfigMaps and Secrets" section is reachable
+# at http://localhost:8088.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: abhi-devops
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 8088
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 8448
+        protocol: TCP
+  - role: worker

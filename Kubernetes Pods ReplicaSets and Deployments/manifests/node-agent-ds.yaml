@@ -1,0 +1,27 @@
+# DaemonSet: no replicas field. One Pod per schedulable node.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: host-metrics-agent
+  labels:
+    app: host-metrics-agent
+spec:
+  selector:
+    matchLabels:
+      app: host-metrics-agent
+  template:
+    metadata:
+      labels:
+        app: host-metrics-agent
+    spec:
+      containers:
+        - name: metrics-collector
+          image: busybox:1.36
+          command: ["sh", "-c", "while true; do echo \"[$(date)] abhi-devops agent sampling host metrics on $(hostname)\"; sleep 10; done"]
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "16Mi"
+            limits:
+              cpu: "50m"
+              memory: "32Mi"

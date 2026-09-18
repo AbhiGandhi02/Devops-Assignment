@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: site-internal
+  labels:
+    app: site-internal
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: site-internal
+  template:
+    metadata:
+      labels:
+        app: site-internal
+    spec:
+      containers:
+        - name: web-node
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"

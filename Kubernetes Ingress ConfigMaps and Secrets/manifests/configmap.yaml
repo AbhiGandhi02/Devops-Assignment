@@ -1,0 +1,14 @@
+# Non-sensitive configuration, kept outside the container image.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bazaar-app-config
+  namespace: default
+  labels:
+    app: bazaar-app
+data:
+  RUNTIME_ENV: "production"
+  LOG_LEVEL: "INFO"
+  SERVICE_PORT: "5000"
+  BASE_CURRENCY: "INR"
+  MAX_CART_ITEMS: "30"

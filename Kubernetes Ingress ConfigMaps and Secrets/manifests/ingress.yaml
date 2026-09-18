@@ -1,0 +1,58 @@
+# One entry point, two ClusterIP Services behind it.
+#   /      -> bazaar-frontend-service  (Nginx)
+#   /api/* -> bazaar-backend-service   (Python, prints ConfigMap + Secret)
+#
+# Two hosts are declared with the same rules:
+#   bazaar.local - used with `curl -H "Host: bazaar.local"`, no /etc/hosts edit
+#   localhost    - so the pages open straight in a browser on http://localhost:8088
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bazaar-ingress
+  namespace: default
+  labels:
+    app: bazaar-app
+  annotations:
+    # No TLS certificate in this lab, so do not redirect HTTP -> HTTPS
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Allow regex capture groups in the path rules
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # Strip the /api prefix before forwarding to the backend Pods
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: bazaar.local
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: bazaar-backend-service
+                port:
+                  number: 80
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: bazaar-frontend-service
+                port:
+                  number: 80
+    - host: localhost
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: bazaar-backend-service
+                port:
+                  number: 80
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: bazaar-frontend-service
+                port:
+                  number: 80

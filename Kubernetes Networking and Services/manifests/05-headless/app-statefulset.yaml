@@ -1,0 +1,31 @@
+# StatefulSet: stable, ordered Pod names site-node-0, site-node-1, site-node-2.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: site-node
+  labels:
+    app: site-peers
+spec:
+  serviceName: site-peers
+  replicas: 3
+  selector:
+    matchLabels:
+      app: site-peers
+  template:
+    metadata:
+      labels:
+        app: site-peers
+    spec:
+      containers:
+        - name: web-peer
+          image: nginx:1.25-alpine
+          ports:
+            - name: web
+              containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"

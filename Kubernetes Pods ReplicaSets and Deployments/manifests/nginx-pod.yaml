@@ -1,0 +1,21 @@
+# A bare Pod: nothing watches it, so deleting it deletes the workload.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: orbit-demo-pod
+  labels:
+    app: orbit-demo
+    tier: frontend
+spec:
+  containers:
+    - name: web-container
+      image: nginx:1.25-alpine
+      ports:
+        - containerPort: 80
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          cpu: "200m"
+          memory: "128Mi"

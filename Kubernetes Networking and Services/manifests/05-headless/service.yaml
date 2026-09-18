@@ -1,0 +1,17 @@
+# Headless Service (clusterIP: None): DNS returns the Pod IPs directly,
+# and each StatefulSet Pod also gets its own DNS record.
+apiVersion: v1
+kind: Service
+metadata:
+  name: site-peers
+  labels:
+    app: site-peers
+spec:
+  clusterIP: None
+  selector:
+    app: site-peers
+  ports:
+    - name: web
+      port: 80
+      targetPort: 80
+      protocol: TCP

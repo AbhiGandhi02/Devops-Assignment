@@ -1,0 +1,17 @@
+# LoadBalancer: asks the cloud provider for an external IP.
+# On a local kind cluster EXTERNAL-IP stays <pending> - there is no cloud provider.
+apiVersion: v1
+kind: Service
+metadata:
+  name: site-extlb-svc
+  labels:
+    app: site-extlb
+spec:
+  type: LoadBalancer
+  selector:
+    app: site-extlb
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP

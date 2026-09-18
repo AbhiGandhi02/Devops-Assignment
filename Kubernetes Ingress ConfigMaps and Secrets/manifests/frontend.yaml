@@ -1,0 +1,53 @@
+---
+# Frontend Deployment - plain Nginx, served at path /
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bazaar-frontend
+  namespace: default
+  labels:
+    app: bazaar-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bazaar-frontend
+  template:
+    metadata:
+      labels:
+        app: bazaar-frontend
+    spec:
+      containers:
+        - name: storefront
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+          # Whole ConfigMap injected as environment variables
+          envFrom:
+            - configMapRef:
+                name: bazaar-app-config
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+---
+# Frontend ClusterIP Service - only the Ingress talks to it
+apiVersion: v1
+kind: Service
+metadata:
+  name: bazaar-frontend-service
+  namespace: default
+  labels:
+    app: bazaar-frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: bazaar-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP

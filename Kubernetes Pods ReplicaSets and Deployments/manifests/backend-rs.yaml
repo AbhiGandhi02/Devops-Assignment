@@ -1,0 +1,30 @@
+# ReplicaSet: keeps replicaCount Pods alive, matched only by the label selector.
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: orbit-api-rs
+  labels:
+    app: orbit-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: orbit-api
+  template:
+    metadata:
+      labels:
+        app: orbit-api
+    spec:
+      containers:
+        - name: api-server
+          image: python:3.11-alpine
+          command: ["python3", "-c", "import http.server; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler, port=5000)"]
+          ports:
+            - containerPort: 5000
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"

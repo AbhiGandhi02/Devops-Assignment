@@ -6,4 +6,4 @@ image:
 database:
   existingSecret: readtrack-db
 config:
-  welcomeMessage: "Production - managed by Argo CD"
+  welcomeMessage: "Production v2 - changed in Git, synced by Argo CD"

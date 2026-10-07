@@ -1,0 +1,37 @@
+# Namespaces used by the project. Every app namespace enforces the "restricted"
+# Pod Security Standard, so a pod that wants root or extra capabilities is rejected.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: readtrack
+  labels:
+    app.kubernetes.io/part-of: readtrack
+    environment: plain-manifests
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: readtrack-dev
+  labels:
+    app.kubernetes.io/part-of: readtrack
+    environment: dev
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: readtrack-prod
+  labels:
+    app.kubernetes.io/part-of: readtrack
+    environment: prod
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: readtrack-ts
+  labels:
+    app.kubernetes.io/part-of: readtrack
+    environment: troubleshooting
+    pod-security.kubernetes.io/enforce: restricted

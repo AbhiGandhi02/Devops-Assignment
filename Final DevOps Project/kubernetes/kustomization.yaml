@@ -1,0 +1,13 @@
+# 1) kubectl apply -f kubernetes/namespace.yaml
+# 2) kubectl -n readtrack create secret generic readtrack-db --from-literal=postgres-password="$(openssl rand -hex 16)"
+# 3) kubectl apply -k kubernetes/      -> every manifest in namespace "readtrack" with the image tag below
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: readtrack
+resources:
+  - manifests
+images:
+  - name: ghcr.io/abhigandhi02/readtrack-backend
+    newTag: local
+  - name: ghcr.io/abhigandhi02/readtrack-frontend
+    newTag: local

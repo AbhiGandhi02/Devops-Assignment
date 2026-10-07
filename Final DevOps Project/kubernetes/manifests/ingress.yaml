@@ -1,0 +1,23 @@
+# ingress-nginx routes /api to the backend and everything else to the frontend.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: readtrack
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: readtrack-k8s.localhost
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: readtrack-backend
+                port: { number: 8000 }
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: readtrack-frontend
+                port: { number: 80 }

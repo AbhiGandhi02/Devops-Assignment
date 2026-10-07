@@ -1,0 +1,12 @@
+# Non-secret configuration, injected into the pods with envFrom.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: readtrack-config
+data:
+  APP_ENV: "k8s-manifests"
+  LOG_LEVEL: "INFO"
+  WELCOME_MESSAGE: "Deployed with plain kubectl manifests"
+  DB_HOST: "readtrack-postgres"
+  DB_NAME: "readtrack"
+  DB_USER: "readtrack"

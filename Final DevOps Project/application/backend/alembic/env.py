@@ -36,6 +36,7 @@ def run_migrations_online() -> None:
         if is_pg:
             connection.execute(text("SELECT pg_advisory_unlock(:id)"), {"id": MIGRATION_LOCK_ID})
             connection.commit()
+    engine.dispose()
 
 
 run_migrations_online()

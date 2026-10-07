@@ -16,7 +16,7 @@ images:
   - name: ghcr.io/abhigandhi02/readtrack-backend
     newTag: v1.0-relase
   - name: ghcr.io/abhigandhi02/readtrack-frontend
-    newTag: local
+    newTag: 060be798b4caa5007d7ea4429f31c0304a9a0ce7
 
 patches:
   # BUG 3 - storage class that does not exist -> PVC Pending -> postgres Pending

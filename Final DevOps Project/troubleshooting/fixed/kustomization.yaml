@@ -6,9 +6,9 @@ resources:
   - ../../kubernetes/manifests
 images:
   - name: ghcr.io/abhigandhi02/readtrack-backend
-    newTag: local
+    newTag: 060be798b4caa5007d7ea4429f31c0304a9a0ce7
   - name: ghcr.io/abhigandhi02/readtrack-frontend
-    newTag: local
+    newTag: 060be798b4caa5007d7ea4429f31c0304a9a0ce7
 patches:
   - target: { kind: Ingress, name: readtrack }
     patch: |-

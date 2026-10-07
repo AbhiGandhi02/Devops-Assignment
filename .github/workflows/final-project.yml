@@ -1,0 +1,376 @@
+# Session 21 - Final DevOps Project (ReadTrack) - complete CI/CD + DevSecOps pipeline.
+#
+#  test + frontend build + IaC validate
+#      -> SAST -> SCA -> secret scan -> docker build -> image + IaC scan -> security gate
+#      -> push to GHCR (commit SHA tag) -> deploy Helm chart to kind + smoke test
+#      -> GitOps: bump the image tag in gitops/values-gitops.yaml (Argo CD picks it up)
+name: "Final Project - ReadTrack CI/CD"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Final DevOps Project/**"
+      - ".github/workflows/final-project.yml"
+      - "!Final DevOps Project/screenshots/**"
+      - "!Final DevOps Project/gitops/**"
+      - "!Final DevOps Project/**.md"
+  pull_request:
+    branches: [main]
+    paths:
+      - "Final DevOps Project/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: final-project-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PROJECT_DIR: Final DevOps Project
+  REGISTRY: ghcr.io/abhigandhi02
+  BACKEND_IMAGE: ghcr.io/abhigandhi02/readtrack-backend
+  FRONTEND_IMAGE: ghcr.io/abhigandhi02/readtrack-frontend
+  TRIVY_IMAGE: aquasec/trivy:0.75.0
+  GITLEAKS_VERSION: 8.24.0
+
+defaults:
+  run:
+    shell: bash
+    working-directory: Final DevOps Project
+
+jobs:
+  # ------------------------------------------------------------ 1. Backend tests
+  backend-test:
+    name: 1. Backend lint + pytest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Final DevOps Project/application/backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: Final DevOps Project/application/backend/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Code quality (ruff)
+        run: ruff check app tests alembic
+      - name: Unit tests (SQLite test database, never the real one)
+        run: pytest -v --cov=app --cov-report=term-missing --cov-fail-under=85 --junitxml=pytest-report.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pytest-report
+          path: Final DevOps Project/application/backend/pytest-report.xml
+
+  # ------------------------------------------------------------ 2. Frontend build
+  frontend-build:
+    name: 2. Frontend build (Vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Final DevOps Project/application/frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - run: npm ci --no-fund
+      - run: npm run build
+      - run: ls -l dist dist/assets
+
+  # ------------------------------------------------------------ 3. IaC validate
+  iac-validate:
+    name: 3. Terraform + Helm validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.5
+      - name: terraform fmt / init / validate
+        run: |
+          terraform -chdir=terraform fmt -check -recursive
+          for dir in terraform terraform/bootstrap terraform/kind-cluster; do
+            echo "== $dir"
+            terraform -chdir="$dir" init -backend=false -input=false >/dev/null
+            terraform -chdir="$dir" validate
+          done
+      - uses: azure/setup-helm@v4
+      - name: helm lint + render (dev and prod)
+        run: |
+          helm lint helm/readtrack -f helm/readtrack/values-dev.yaml --set database.existingSecret=x
+          helm lint helm/readtrack -f helm/readtrack/values-prod.yaml -f gitops/values-gitops.yaml
+          helm template readtrack helm/readtrack -f helm/readtrack/values-prod.yaml -f gitops/values-gitops.yaml | grep '^kind:' | sort | uniq -c
+          kubectl kustomize kubernetes | grep '^kind:' | sort | uniq -c
+
+  # ------------------------------------------------------------ 4. SAST
+  sast:
+    name: 4. SAST (Bandit + Semgrep)
+    needs: [backend-test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install "bandit[sarif]==1.8.6" semgrep && mkdir -p reports
+      - name: Bandit
+        run: |
+          bandit -r application/backend/app -c security/bandit.yaml -f json -o reports/bandit.json --exit-zero
+          bandit -r application/backend/app -c security/bandit.yaml -f sarif -o reports/bandit.sarif --exit-zero
+          bandit -r application/backend/app -c security/bandit.yaml -f screen --exit-zero
+      - name: Semgrep (python + dockerfile rules)
+        run: |
+          semgrep scan --config p/python --config p/dockerfile --json -o reports/semgrep.json application docker
+          semgrep scan --config p/python --config p/dockerfile application docker || true
+      - name: Upload SARIF to GitHub code scanning
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: Final DevOps Project/reports/bandit.sarif
+          category: final-project-bandit
+      - uses: actions/upload-artifact@v4
+        with:
+          name: report-sast
+          path: Final DevOps Project/reports/
+
+  # ------------------------------------------------------------ 5. SCA
+  sca:
+    name: 5. SCA (pip-audit + npm audit)
+    needs: [backend-test, frontend-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - run: pip install pip-audit && mkdir -p reports
+      - name: pip-audit (Python dependencies vs PyPI advisory DB)
+        run: |
+          pip-audit -r application/backend/requirements.txt -f json -o reports/pip-audit.json || true
+          pip-audit -r application/backend/requirements.txt
+      - name: npm audit (frontend dependencies)
+        run: |
+          cd application/frontend && npm ci --no-fund --ignore-scripts
+          npm audit --json > ../../reports/npm-audit.json || true
+          npm audit --audit-level=high
+      - uses: actions/upload-artifact@v4
+        with:
+          name: report-sca
+          path: Final DevOps Project/reports/
+
+  # ------------------------------------------------------------ 6. Secret scan
+  secret-scan:
+    name: 6. Secret scan (Gitleaks)
+    needs: [backend-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install gitleaks
+        run: |
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+      - name: Scan the project tree
+        run: |
+          mkdir -p reports
+          gitleaks dir . --config security/gitleaks.toml --report-format json \
+            --report-path reports/gitleaks.json --exit-code 0 --redact -v
+          echo "leaks found: $(jq length reports/gitleaks.json)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: report-secrets
+          path: Final DevOps Project/reports/
+
+  # ------------------------------------------------------------ 7. Docker build
+  docker-build:
+    name: 7. Docker build (backend + frontend)
+    needs: [backend-test, frontend-build, iac-validate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build both images, tagged with the commit SHA
+        run: |
+          docker build -f docker/backend.Dockerfile --build-arg APP_VERSION=${{ github.sha }} \
+            -t $BACKEND_IMAGE:${{ github.sha }} application/backend
+          docker build -f docker/frontend.Dockerfile -t $FRONTEND_IMAGE:${{ github.sha }} application/frontend
+          docker image ls --filter reference="$REGISTRY/*"
+          docker run --rm --entrypoint id $BACKEND_IMAGE:${{ github.sha }}
+          docker run --rm --entrypoint id $FRONTEND_IMAGE:${{ github.sha }}
+          docker save $BACKEND_IMAGE:${{ github.sha }} $FRONTEND_IMAGE:${{ github.sha }} -o /tmp/images.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: images
+          path: /tmp/images.tar
+          retention-days: 1
+
+  # ------------------------------------------------------------ 8. Image + IaC scan
+  image-scan:
+    name: 8. Trivy (images + IaC)
+    needs: [docker-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: images
+          path: /tmp
+      - run: docker load -i /tmp/images.tar && mkdir -p reports
+      - name: Trivy image scan - backend
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src $TRIVY_IMAGE \
+            image --scanners vuln --config security/trivy.yaml --ignorefile security/.trivyignore \
+            --format json -o reports/trivy-backend.json $BACKEND_IMAGE:${{ github.sha }}
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src $TRIVY_IMAGE \
+            image --scanners vuln --config security/trivy.yaml $BACKEND_IMAGE:${{ github.sha }}
+      - name: Trivy image scan - frontend
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src $TRIVY_IMAGE \
+            image --scanners vuln --config security/trivy.yaml --ignorefile security/.trivyignore \
+            --format json -o reports/trivy-frontend.json $FRONTEND_IMAGE:${{ github.sha }}
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src $TRIVY_IMAGE \
+            image --scanners vuln --config security/trivy.yaml $FRONTEND_IMAGE:${{ github.sha }}
+      - name: Trivy config scan (Dockerfiles, Helm, K8s manifests, Terraform)
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src $TRIVY_IMAGE config --severity HIGH,CRITICAL \
+            --ignorefile security/.trivyignore --format json -o reports/trivy-config.json .
+          docker run --rm -v "$PWD:/src" -w /src $TRIVY_IMAGE config --severity HIGH,CRITICAL .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: report-images
+          path: Final DevOps Project/reports/
+
+  # ------------------------------------------------------------ 9. Security gate
+  security-gate:
+    name: 9. Security gate
+    needs: [sast, sca, secret-scan, image-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: report-*
+          path: Final DevOps Project/reports
+          merge-multiple: true
+      - run: ls -l reports
+      - name: Evaluate policy (fails the pipeline on any violation)
+        run: python3 security/gate.py reports
+
+  # ------------------------------------------------------------ 10. Push
+  push:
+    name: 10. Push images to GHCR
+    needs: [security-gate]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: images
+          path: /tmp
+      - name: Push the exact images that were scanned (SHA tags only)
+        working-directory: .
+        run: |
+          docker load -i /tmp/images.tar
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push $BACKEND_IMAGE:${{ github.sha }}
+          docker push $FRONTEND_IMAGE:${{ github.sha }}
+          echo "### Images pushed" >> $GITHUB_STEP_SUMMARY
+          echo "- \`$BACKEND_IMAGE:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`$FRONTEND_IMAGE:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # ------------------------------------------------------------ 11. Deploy
+  deploy:
+    name: 11. Deploy to Kubernetes (Helm on kind) + smoke test
+    needs: [push]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: helm/kind-action@v1
+        with:
+          install_only: true
+      - name: Create the kind cluster (ingress-ready control-plane, port 80 mapped)
+        run: kind create cluster --name readtrack-ci --config kubernetes/addons/kind-ci.yaml --wait 120s
+      - name: Pull the pushed images from GHCR and load them into kind
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          for img in $BACKEND_IMAGE $FRONTEND_IMAGE; do
+            docker pull $img:${{ github.sha }}
+            kind load docker-image $img:${{ github.sha }} --name readtrack-ci
+          done
+      - name: Install ingress-nginx
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.13.3/deploy/static/provider/kind/deploy.yaml
+          kubectl -n ingress-nginx wait --for=condition=Available deployment/ingress-nginx-controller --timeout=240s
+      - name: helm upgrade --install
+        run: |
+          kubectl apply -f kubernetes/namespace.yaml
+          # DB password generated here, stored only in the cluster - never in Git
+          kubectl -n readtrack-dev create secret generic readtrack-db \
+            --from-literal=postgres-password="$(openssl rand -hex 16)"
+          helm upgrade --install readtrack helm/readtrack -n readtrack-dev \
+            -f helm/readtrack/values-dev.yaml \
+            --set image.tag=${{ github.sha }} \
+            --set database.existingSecret=readtrack-db \
+            --set monitoring.serviceMonitor.enabled=false \
+            --set monitoring.prometheusRule.enabled=false \
+            --wait --timeout 5m
+          helm list -n readtrack-dev
+          kubectl get pods,svc,ingress,hpa,pvc -n readtrack-dev
+      - name: helm test
+        run: helm test readtrack -n readtrack-dev --logs
+      - name: Smoke test through the Ingress
+        run: |
+          H="Host: readtrack-dev.localhost"
+          for i in $(seq 1 20); do curl -sf -H "$H" localhost/api/info && break; sleep 3; done
+          echo
+          curl -sf -H "$H" localhost/ | grep -o '<title>.*</title>'
+          curl -sf -H "$H" -X POST localhost/api/books -H 'Content-Type: application/json' \
+            -d '{"title":"Accelerate","author":"Forsgren, Humble, Kim","status":"finished","pages":288,"rating":5}'
+          echo
+          curl -sf -H "$H" localhost/api/books/stats
+          echo
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "$H" localhost/api/books/999)" = "404"
+          echo "smoke test passed for ${{ github.sha }}"
+
+  # ------------------------------------------------------------ 12. GitOps bump
+  gitops-bump:
+    name: 12. GitOps - bump image tag for Argo CD
+    needs: [deploy]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: Commit the new tag to gitops/values-gitops.yaml
+        run: |
+          sed -i "s|^  tag: .*|  tag: \"${{ github.sha }}\"|" gitops/values-gitops.yaml
+          git diff
+          git config user.name "readtrack-ci"
+          git config user.email "readtrack-ci@users.noreply.github.com"
+          git add gitops/values-gitops.yaml
+          git commit -m "Final project GitOps: deploy readtrack ${GITHUB_SHA::7} to prod" || { echo "no change"; exit 0; }
+          # other people push to main too - rebase and retry instead of failing
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep $((i * 5))
+          done
+          exit 1

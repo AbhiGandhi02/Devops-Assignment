@@ -1,0 +1,7 @@
+#!/bin/bash
+# Runs once on first boot (cloud-init).
+set -euxo pipefail
+apt-get update -y
+apt-get install -y nginx awscli
+aws s3 cp "s3://${bucket}/${key}" /var/www/html/index.html --region ${region}
+systemctl enable --now nginx

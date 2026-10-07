@@ -1,4 +1,5 @@
 """Database engine and session handling (SQLAlchemy 2.0 style)."""
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 

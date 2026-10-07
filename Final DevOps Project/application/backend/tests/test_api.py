@@ -18,8 +18,9 @@ def test_create_and_get_book(client, book):
 
 
 def test_list_books_with_status_filter(client, book):
-    client.post("/api/books", json={"title": "Dune", "author": "Frank Herbert", "status": "finished",
-                                    "pages": 612, "rating": 5})
+    client.post(
+        "/api/books", json={"title": "Dune", "author": "Frank Herbert", "status": "finished", "pages": 612, "rating": 5}
+    )
     assert len(client.get("/api/books").json()) == 2
     finished = client.get("/api/books", params={"status": "finished"}).json()
     assert [b["title"] for b in finished] == ["Dune"]
@@ -47,10 +48,14 @@ def test_validation_rejects_bad_payload(client):
 
 
 def test_stats(client):
-    for title, status, pages, rating in [("A", "finished", 100, 4), ("B", "finished", 200, 5),
-                                         ("C", "reading", 50, None)]:
-        client.post("/api/books", json={"title": title, "author": "x", "status": status,
-                                        "pages": pages, "rating": rating})
+    for title, status, pages, rating in [
+        ("A", "finished", 100, 4),
+        ("B", "finished", 200, 5),
+        ("C", "reading", 50, None),
+    ]:
+        client.post(
+            "/api/books", json={"title": title, "author": "x", "status": status, "pages": pages, "rating": rating}
+        )
     s = client.get("/api/books/stats").json()
     assert s["total"] == 3
     assert s["by_status"] == {"want_to_read": 0, "reading": 1, "finished": 2}

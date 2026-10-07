@@ -1,4 +1,5 @@
 """ReadTrack API - a small reading-list tracker (FastAPI + PostgreSQL)."""
+
 import json
 import logging
 import sys
@@ -47,9 +48,17 @@ async def observe(request: Request, call_next):
         metrics.REQUESTS.labels(request.method, path, str(response.status_code)).inc()
         metrics.LATENCY.labels(request.method, path).observe(elapsed)
         if path not in ("/health", "/ready"):
-            log.info("request", extra={"extra_fields": {
-                "method": request.method, "path": request.url.path,
-                "status": response.status_code, "ms": round(elapsed * 1000, 1)}})
+            log.info(
+                "request",
+                extra={
+                    "extra_fields": {
+                        "method": request.method,
+                        "path": request.url.path,
+                        "status": response.status_code,
+                        "ms": round(elapsed * 1000, 1),
+                    }
+                },
+            )
     return response
 
 
@@ -84,8 +93,7 @@ def prometheus_metrics():
 
 @app.get("/api/info")
 def info():
-    return {"version": settings.app_version, "env": settings.app_env,
-            "message": settings.welcome_message}
+    return {"version": settings.app_version, "env": settings.app_env, "message": settings.welcome_message}
 
 
 @app.get("/api/books", response_model=list[BookOut])
@@ -103,8 +111,12 @@ def stats(db: Session = Depends(get_db)):
     rows = dict(db.execute(select(Book.status, func.count()).group_by(Book.status)).all())
     pages = db.scalar(select(func.coalesce(func.sum(Book.pages), 0)).where(Book.status == "finished"))
     avg = db.scalar(select(func.avg(Book.rating)).where(Book.rating.is_not(None)))
-    return Stats(total=sum(rows.values()), by_status={s: rows.get(s, 0) for s in STATUSES},
-                 pages_read=int(pages or 0), average_rating=round(float(avg), 2) if avg else None)
+    return Stats(
+        total=sum(rows.values()),
+        by_status={s: rows.get(s, 0) for s in STATUSES},
+        pages_read=int(pages or 0),
+        average_rating=round(float(avg), 2) if avg else None,
+    )
 
 
 @app.get("/api/books/{book_id}", response_model=BookOut)

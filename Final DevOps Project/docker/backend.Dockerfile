@@ -14,7 +14,7 @@ ENV PATH="/venv/bin:$PATH" APP_VERSION=$APP_VERSION PYTHONUNBUFFERED=1 PYTHONDON
 # pip is not needed at runtime and its vendored urllib3/msgpack/setuptools carried HIGH CVEs
 # (found by Trivy) - so it is removed from the final image together with the OS upgrades.
 RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/* \
-    && python -m pip uninstall -y pip \
+    && python -m pip uninstall -y --root-user-action=ignore pip \
     && useradd --create-home --uid 10001 readtrack
 WORKDIR /app
 COPY --from=build /venv /venv

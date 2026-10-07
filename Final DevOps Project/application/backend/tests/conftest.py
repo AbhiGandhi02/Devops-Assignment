@@ -1,5 +1,6 @@
 """Test fixtures: every test gets a fresh in-memory SQLite database, so the
 tests never touch the PostgreSQL database used by compose or Kubernetes."""
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -32,7 +33,9 @@ def client():
 
 @pytest.fixture()
 def book(client):
-    r = client.post("/api/books", json={"title": "The Pragmatic Programmer", "author": "Hunt & Thomas",
-                                        "status": "reading", "pages": 352})
+    r = client.post(
+        "/api/books",
+        json={"title": "The Pragmatic Programmer", "author": "Hunt & Thomas", "status": "reading", "pages": 352},
+    )
     assert r.status_code == 201
     return r.json()

@@ -1,8 +1,8 @@
 """The Alembic migration must build the same schema the app expects."""
-from alembic.config import Config
-from sqlalchemy import create_engine, inspect
 
 from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine, inspect
 
 
 def test_alembic_upgrade_and_downgrade(tmp_path, monkeypatch):

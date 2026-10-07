@@ -4,11 +4,12 @@ Two backend replicas start at the same time in Kubernetes and both run
 `alembic upgrade head` in an initContainer, so on PostgreSQL we take an
 advisory lock first: one pod migrates, the other waits and then sees head.
 """
+
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import text
 
-from alembic import context
 from app import models  # noqa: F401  (registers the tables on Base.metadata)
 from app.config import get_settings
 from app.db import Base, make_engine

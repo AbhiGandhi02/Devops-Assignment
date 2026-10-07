@@ -58,7 +58,7 @@ jobs:
           cache-dependency-path: Final DevOps Project/application/backend/requirements-dev.txt
       - run: pip install -r requirements-dev.txt
       - name: Code quality (ruff)
-        run: ruff check app tests alembic
+        run: ruff check app tests alembic && ruff format --check app tests alembic
       - name: Unit tests (SQLite test database, never the real one)
         run: pytest -v --cov=app --cov-report=term-missing --cov-fail-under=85 --junitxml=pytest-report.xml
       - uses: actions/upload-artifact@v4

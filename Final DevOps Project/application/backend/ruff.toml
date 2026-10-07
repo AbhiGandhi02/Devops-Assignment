@@ -8,3 +8,4 @@ ignore = ["S101"]                          # assert is fine in tests
 
 [lint.isort]
 known-first-party = ["app"]
+known-third-party = ["alembic"]   # the local alembic/ folder must not be mistaken for first-party code

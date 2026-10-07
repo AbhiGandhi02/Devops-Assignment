@@ -1,5 +1,6 @@
 """Runtime settings. Everything comes from environment variables so the same
 image runs in docker compose, in Kubernetes (ConfigMap + Secret) and in tests."""
+
 import os
 from dataclasses import dataclass
 

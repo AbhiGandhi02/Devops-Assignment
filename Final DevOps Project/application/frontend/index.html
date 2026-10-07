@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReadTrack</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23176b5b'/><path d='M8 8h7v16H8zM17 8h7v16h-7z' fill='white'/></svg>" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <span class="logo">RT</span>
+        <div>
+          <h1>ReadTrack</h1>
+          <p id="welcome" class="muted">Loading...</p>
+        </div>
+      </div>
+      <div id="env" class="env-pill">env: ?</div>
+    </header>
+
+    <main>
+      <section class="kpis" id="kpis">
+        <div class="kpi"><span class="label">Books</span><span class="value" id="k-total">-</span></div>
+        <div class="kpi"><span class="label">Reading now</span><span class="value" id="k-reading">-</span></div>
+        <div class="kpi"><span class="label">Finished</span><span class="value" id="k-finished">-</span></div>
+        <div class="kpi"><span class="label">Pages read</span><span class="value" id="k-pages">-</span></div>
+        <div class="kpi"><span class="label">Avg rating</span><span class="value" id="k-rating">-</span></div>
+      </section>
+
+      <section class="grid">
+        <form id="add-form" class="card">
+          <h2>Add a book</h2>
+          <label>Title<input name="title" required maxlength="200" placeholder="Designing Data-Intensive Applications" /></label>
+          <label>Author<input name="author" required maxlength="120" placeholder="Martin Kleppmann" /></label>
+          <div class="row">
+            <label>Status
+              <select name="status">
+                <option value="want_to_read">Want to read</option>
+                <option value="reading">Reading</option>
+                <option value="finished">Finished</option>
+              </select>
+            </label>
+            <label>Pages<input name="pages" type="number" min="0" value="0" /></label>
+            <label>Rating
+              <select name="rating">
+                <option value="">-</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+              </select>
+            </label>
+          </div>
+          <button type="submit">Add book</button>
+          <p id="form-msg" class="muted"></p>
+        </form>
+
+        <div class="card list">
+          <div class="list-head">
+            <h2>My shelf</h2>
+            <div class="filters" id="filters">
+              <button data-status="" class="active">All</button>
+              <button data-status="want_to_read">Want to read</button>
+              <button data-status="reading">Reading</button>
+              <button data-status="finished">Finished</button>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Title</th><th>Author</th><th>Status</th><th>Pages</th><th>Rating</th><th></th></tr></thead>
+            <tbody id="books"><tr><td colspan="6" class="muted">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <footer id="footer" class="muted">ReadTrack - Final DevOps Project - Abhi Gandhi (24bcs10397)</footer>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

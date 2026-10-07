@@ -1,0 +1,15 @@
+# local-only files
+.kubeconfig
+*.kubeconfig
+.env
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.coverage
+.ruff_cache/
+node_modules/
+dist/
+reports/
+transcripts/
+*.log

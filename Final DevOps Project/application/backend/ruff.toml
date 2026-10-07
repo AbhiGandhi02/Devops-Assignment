@@ -1,0 +1,10 @@
+# Code-quality gate used locally and in CI (ruff = flake8 + isort + pyupgrade in one tool)
+line-length = 120
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "S"]   # S = flake8-bandit style security checks
+ignore = ["S101"]                          # assert is fine in tests
+
+[lint.isort]
+known-first-party = ["app"]

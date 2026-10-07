@@ -1,0 +1,17 @@
+# The corrected troubleshooting environment = the normal manifests in namespace readtrack-ts.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: readtrack-ts
+resources:
+  - ../../kubernetes/manifests
+images:
+  - name: ghcr.io/abhigandhi02/readtrack-backend
+    newTag: local
+  - name: ghcr.io/abhigandhi02/readtrack-frontend
+    newTag: local
+patches:
+  - target: { kind: Ingress, name: readtrack }
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: readtrack-ts.localhost

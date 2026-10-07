@@ -1,0 +1,57 @@
+# Final troubleshooting challenge - the normal ReadTrack manifests with EIGHT bugs injected
+# (bug 2, the wrong Secret key, is in the secret command below because Secrets never live in Git).
+#   kubectl apply -f kubernetes/namespace.yaml
+#   kubectl -n readtrack-ts create secret generic readtrack-db --from-literal=password="$(openssl rand -hex 16)"   # bug 2: wrong key
+#   kubectl apply -k troubleshooting/broken
+# Every bug is something I have seen go wrong in real deployments. The fixes are in ../README.md;
+# ../fixed is the corrected state (kubectl diff -k ../fixed must be empty after the fixes).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: readtrack-ts
+resources:
+  - ../../kubernetes/manifests
+
+images:
+  # BUG 1 - wrong image tag (typo in the release tag) -> ErrImagePull / ImagePullBackOff
+  - name: ghcr.io/abhigandhi02/readtrack-backend
+    newTag: v1.0-relase
+  - name: ghcr.io/abhigandhi02/readtrack-frontend
+    newTag: local
+
+patches:
+  # BUG 3 - storage class that does not exist -> PVC Pending -> postgres Pending
+  - target: { kind: StatefulSet, name: readtrack-postgres }
+    patch: |-
+      - op: add
+        path: /spec/volumeClaimTemplates/0/spec/storageClassName
+        value: fast-ssd
+  # BUG 4 - readiness probe on a path the API does not have -> Running but never Ready
+  # BUG 5 - resources removed: the HPA target has no CPU request -> HPA <unknown>, never scales
+  - target: { kind: Deployment, name: readtrack-backend }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/readinessProbe/httpGet/path
+        value: /readyz
+      - op: remove
+        path: /spec/template/spec/containers/0/resources
+  # BUG 6 - Service targetPort points at a port nobody listens on -> connection refused
+  - target: { kind: Service, name: readtrack-backend }
+    patch: |-
+      - op: replace
+        path: /spec/ports/0/targetPort
+        value: 8080
+  # BUG 7 - Service selector does not match the pod labels -> no endpoints -> 503
+  - target: { kind: Service, name: readtrack-frontend }
+    patch: |-
+      - op: replace
+        path: /spec/selector/app.kubernetes.io~1name
+        value: front-end
+  # BUG 8 - Ingress /api routes to a Service that does not exist -> 503 on every API call
+  - target: { kind: Ingress, name: readtrack }
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/http/paths/0/backend/service/name
+        value: readtrack-api
+      - op: replace
+        path: /spec/rules/0/host
+        value: readtrack-ts.localhost

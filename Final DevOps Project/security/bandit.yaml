@@ -1,0 +1,2 @@
+# Bandit (SAST) - scan the application code, not the tests (assert is expected there).
+exclude_dirs: ["tests", ".venv", "alembic"]

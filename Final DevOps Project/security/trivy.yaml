@@ -1,0 +1,6 @@
+# Shared Trivy settings for the fs / image scans in CI
+severity:
+  - HIGH
+  - CRITICAL
+vulnerability:
+  ignore-unfixed: true   # fail only on vulnerabilities that have a released fix

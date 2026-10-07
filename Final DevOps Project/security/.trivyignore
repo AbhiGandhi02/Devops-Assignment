@@ -1,0 +1,2 @@
+# Accepted findings (ID + reason + review date). Empty on purpose: nothing is accepted
+# globally; the one accepted IaC risk is an inline #trivy:ignore in terraform/network.tf.

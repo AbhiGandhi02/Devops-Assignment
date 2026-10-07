@@ -1,0 +1,19 @@
+# Gitleaks secret scanning: the default ruleset plus a rule for PostgreSQL URLs with an inline password.
+title = "readtrack gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "postgres-url-with-password"
+description = "PostgreSQL connection string with an inline password"
+regex = '''postgres(?:ql)?(?:\+psycopg)?://[A-Za-z0-9_]+:([^@\s$'"]{8,})@'''
+secretGroup = 1
+keywords = ["postgres://", "postgresql://", "postgresql+psycopg://"]
+
+[allowlist]
+description = "documented placeholders and LocalStack dummy credentials are not secrets"
+regexes = ['''change-me''', '''readtrack-local''', '''access_key\s*=\s*"test"''', '''secret_key\s*=\s*"test"''']
+# *.tfstate is git-ignored and never committed: the kind cluster's state holds its admin client key
+# (gitleaks found it in my working tree on the first local scan - that is exactly why it is ignored)
+paths = ['''(^|/)node_modules/''', '''(^|/)reports/''', '''(^|/)\.terraform/''', '''(^|/)screenshots/''', '''\.tfstate(\.backup)?$''', '''(^|/)\.kubeconfig$''']

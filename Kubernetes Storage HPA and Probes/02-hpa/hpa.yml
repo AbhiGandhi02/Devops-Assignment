@@ -1,0 +1,23 @@
+# Keep average CPU at 50% of the request (50% of 50m = 25m per Pod), between 1 and 6 Pods.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: orbit-web-hpa
+  namespace: hpa-lab
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: orbit-web
+  minReplicas: 1
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60   # default is 300s; shortened so the lab shows scale-down

@@ -1,0 +1,23 @@
+# Static provisioning step 1: an admin creates a PersistentVolume by hand.
+# storageClassName "manual" so the default (dynamic) class does not grab the claim.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: abhi-manual-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /tmp/abhi-manual-pv
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: ["abhi-devops-worker"]

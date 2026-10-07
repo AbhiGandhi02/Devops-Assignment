@@ -1,0 +1,12 @@
+# 500Mi ReadWriteOnce claim, dynamically provisioned by the default StorageClass.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: web-data
+  namespace: production-webapp
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi

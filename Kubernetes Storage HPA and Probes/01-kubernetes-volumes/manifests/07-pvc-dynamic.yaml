@@ -1,0 +1,32 @@
+# Dynamic provisioning: no PV exists beforehand. The provisioner of class
+# abhi-fast creates one automatically once a Pod uses this claim.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dynamic-claim
+  namespace: storage-lab
+spec:
+  storageClassName: abhi-fast
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dynamic-demo
+  namespace: storage-lab
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "df -h /data | tail -1; echo dynamic volume works > /data/proof.txt; sleep 3600"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: dynamic-claim

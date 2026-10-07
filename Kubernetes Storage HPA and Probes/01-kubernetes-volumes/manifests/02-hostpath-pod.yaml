@@ -1,0 +1,21 @@
+# hostPath: mounts a directory from the NODE's filesystem into the Pod.
+# Survives Pod deletion, but only on that one node - pinned with nodeName here.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostpath-demo
+  namespace: storage-lab
+spec:
+  nodeName: abhi-devops-worker
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo \"hostPath write from $(hostname) at $(date +%T)\" >> /node-data/visits.txt; sleep 3600"]
+      volumeMounts:
+        - name: node-dir
+          mountPath: /node-data
+  volumes:
+    - name: node-dir
+      hostPath:
+        path: /tmp/abhi-hostpath-demo
+        type: DirectoryOrCreate

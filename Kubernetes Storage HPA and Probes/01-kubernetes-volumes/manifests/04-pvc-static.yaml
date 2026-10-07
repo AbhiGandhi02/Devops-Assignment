@@ -1,0 +1,14 @@
+# Static provisioning step 2: a developer asks for storage. Kubernetes binds
+# the claim to any PV whose class, access mode and size satisfy it.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: manual-claim
+  namespace: storage-lab
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi

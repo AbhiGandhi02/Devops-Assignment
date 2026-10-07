@@ -1,0 +1,18 @@
+# A Pod uses the claim by name - it never needs to know which PV is behind it.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pvc-demo
+  namespace: storage-lab
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo \"order #$(date +%s) saved by $(hostname)\" >> /data/orders.txt; sleep 3600"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: manual-claim

@@ -1,0 +1,9 @@
+# A StorageClass describes HOW to create volumes on demand.
+# kind ships rancher.io/local-path; on AWS this would be ebs.csi.aws.com with type: gp3.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: abhi-fast
+provisioner: rancher.io/local-path
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer

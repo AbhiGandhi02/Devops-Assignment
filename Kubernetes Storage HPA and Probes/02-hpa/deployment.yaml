@@ -1,0 +1,41 @@
+# The app to autoscale. HPA computes utilization as usage / REQUEST,
+# so a cpu request is mandatory - without it TARGETS shows <unknown>.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orbit-web
+  namespace: hpa-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orbit-web
+  template:
+    metadata:
+      labels:
+        app: orbit-web
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orbit-web
+  namespace: hpa-lab
+spec:
+  selector:
+    app: orbit-web
+  ports:
+    - port: 80
+      targetPort: 80

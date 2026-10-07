@@ -1,0 +1,61 @@
+{{- $name := printf "%s-frontend" (include "readtrack.fullname" .) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels: {{- include "readtrack.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.frontend.autoscaling.enabled }}
+  replicas: {{ .Values.frontend.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels: {{- include "readtrack.selector" (dict "component" "frontend" "root" .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "readtrack.labels" . | nindent 8 }}
+        {{- include "readtrack.selector" (dict "component" "frontend" "root" .) | nindent 8 }}
+    spec:
+      {{- include "readtrack.podSecurity" . | nindent 6 }}
+      automountServiceAccountToken: false
+      containers:
+        - name: frontend
+          image: {{ printf "%s/%s:%s" .Values.image.registry .Values.frontend.repository .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.frontend.port }}
+          env:
+            - name: BACKEND_URL
+              value: http://{{ include "readtrack.fullname" . }}-backend:{{ .Values.backend.port }}
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          resources: {{- toYaml .Values.frontend.resources | nindent 12 }}
+          {{- include "readtrack.containerSecurity" . | nindent 10 }}
+          volumeMounts:
+            # nginx writes its rendered config, pid and cache - everything else is read-only
+            - { name: tmp, mountPath: /tmp }
+            - { name: conf, mountPath: /etc/nginx/conf.d }
+            - { name: cache, mountPath: /var/cache/nginx }
+      volumes:
+        - { name: tmp, emptyDir: {} }
+        - { name: conf, emptyDir: {} }
+        - { name: cache, emptyDir: {} }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels: {{- include "readtrack.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector: {{- include "readtrack.selector" (dict "component" "frontend" "root" .) | nindent 4 }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

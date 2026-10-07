@@ -1,0 +1,7 @@
+ReadTrack {{ .Values.image.tag }} is deployed to namespace {{ .Release.Namespace }} ({{ .Values.global.environment }}).
+
+  UI + API through the Ingress:  http://{{ .Values.ingress.host }}:8180/
+  API health:                    http://{{ .Values.ingress.host }}:8180/api/info
+
+  kubectl get pods,svc,ingress,hpa -n {{ .Release.Namespace }}
+  helm test {{ .Release.Name }} -n {{ .Release.Namespace }}

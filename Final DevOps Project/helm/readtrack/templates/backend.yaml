@@ -1,0 +1,90 @@
+{{- $name := printf "%s-backend" (include "readtrack.fullname" .) }}
+{{- $image := printf "%s/%s:%s" .Values.image.registry .Values.backend.repository .Values.image.tag }}
+{{- $dbEnv := list
+      (dict "name" "DB_PASSWORD" "valueFrom" (dict "secretKeyRef" (dict "name" (include "readtrack.secretName" .) "key" .Values.database.secretKey)))
+      (dict "name" "DATABASE_URL" "value" "postgresql+psycopg://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):5432/$(DB_NAME)") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels: {{- include "readtrack.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.backend.autoscaling.enabled }}
+  replicas: {{ .Values.backend.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+  selector:
+    matchLabels: {{- include "readtrack.selector" (dict "component" "backend" "root" .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "readtrack.labels" . | nindent 8 }}
+        {{- include "readtrack.selector" (dict "component" "backend" "root" .) | nindent 8 }}
+      annotations:
+        # config changes (e.g. a GitOps commit) roll the pods automatically
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      {{- include "readtrack.podSecurity" . | nindent 6 }}
+      automountServiceAccountToken: false
+      initContainers:
+        # schema migration before the API starts (alembic takes a PG advisory lock)
+        - name: migrate
+          image: {{ $image }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["sh", "-c", "for i in $(seq 1 30); do alembic upgrade head && exit 0; echo 'db not ready, retrying'; sleep 3; done; exit 1"]
+          envFrom:
+            - configMapRef: { name: {{ include "readtrack.fullname" . }}-config }
+          env: {{- toYaml $dbEnv | nindent 12 }}
+          {{- include "readtrack.containerSecurity" . | nindent 10 }}
+          resources: {{- toYaml .Values.backend.resources | nindent 12 }}
+      containers:
+        - name: backend
+          image: {{ $image }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.backend.port }}
+          envFrom:
+            - configMapRef: { name: {{ include "readtrack.fullname" . }}-config }
+          env:
+            {{- toYaml $dbEnv | nindent 12 }}
+            - name: APP_VERSION
+              value: {{ .Values.image.tag | quote }}
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet: { path: /ready, port: http }
+            periodSeconds: 5
+            failureThreshold: 2
+          resources: {{- toYaml .Values.backend.resources | nindent 12 }}
+          {{- include "readtrack.containerSecurity" . | nindent 10 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "readtrack.labels" . | nindent 4 }}
+    {{- include "readtrack.selector" (dict "component" "backend" "root" .) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector: {{- include "readtrack.selector" (dict "component" "backend" "root" .) | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.backend.port }}
+      targetPort: http

@@ -1,0 +1,28 @@
+# Production-like settings: more replicas, wider autoscaling, both HPAs on.
+global:
+  environment: prod
+config:
+  logLevel: INFO
+  welcomeMessage: "Production - managed by Argo CD"
+backend:
+  replicas: 3
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 1000m, memory: 384Mi }
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 8
+    targetCPU: 65
+frontend:
+  autoscaling:
+    enabled: true
+postgres:
+  storage: 2Gi
+ingress:
+  host: readtrack.localhost
+monitoring:
+  serviceMonitor:
+    enabled: true
+  prometheusRule:
+    enabled: true

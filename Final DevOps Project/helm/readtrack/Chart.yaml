@@ -1,0 +1,9 @@
+apiVersion: v2
+name: readtrack
+description: ReadTrack - reading-list tracker (FastAPI + nginx/Vite frontend + PostgreSQL) for the Final DevOps Project
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Abhi Gandhi (24bcs10397)
+keywords: [fastapi, postgresql, devops, final-project]

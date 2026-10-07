@@ -1,0 +1,13 @@
+# helm upgrade --install readtrack helm/readtrack -n readtrack-dev -f helm/readtrack/values-dev.yaml
+global:
+  environment: dev
+config:
+  logLevel: DEBUG
+  welcomeMessage: "Dev environment - deployed with Helm"
+ingress:
+  host: readtrack-dev.localhost
+monitoring:
+  serviceMonitor:
+    enabled: true
+  prometheusRule:
+    enabled: true

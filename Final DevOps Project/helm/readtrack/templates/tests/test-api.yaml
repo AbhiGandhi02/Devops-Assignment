@@ -1,0 +1,31 @@
+# `helm test` - a one-shot pod that calls the API through the Service.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "readtrack.fullname" . }}-test-api
+  labels: {{- include "readtrack.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  restartPolicy: Never
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    seccompProfile: { type: RuntimeDefault }
+  containers:
+    - name: curl
+      image: {{ printf "%s/%s:%s" .Values.image.registry .Values.backend.repository .Values.image.tag }}
+      command:
+        - python
+        - -c
+        - |
+          import json, urllib.request
+          base = "http://{{ include "readtrack.fullname" . }}-backend:{{ .Values.backend.port }}"
+          for path in ("/health", "/ready", "/api/books/stats"):
+              body = urllib.request.urlopen(base + path, timeout=5).read().decode()
+              print(path, "->", body)
+          print("helm test passed")
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities: { drop: ["ALL"] }

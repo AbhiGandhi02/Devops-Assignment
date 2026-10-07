@@ -1,0 +1,14 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- range $component := list "backend" "frontend" }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "readtrack.fullname" $ }}-{{ $component }}
+  labels: {{- include "readtrack.labels" $ | nindent 4 }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {{- include "readtrack.selector" (dict "component" $component "root" $) | nindent 6 }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,40 @@
+{{- if .Values.monitoring.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "readtrack.fullname" . }}-alerts
+  labels:
+    {{- include "readtrack.labels" . | nindent 4 }}
+    release: {{ .Values.monitoring.serviceMonitor.releaseLabel }}
+spec:
+  groups:
+    - name: readtrack.rules
+      rules:
+        - alert: ReadTrackBackendDown
+          expr: sum(up{namespace="{{ .Release.Namespace }}", service="{{ include "readtrack.fullname" . }}-backend"}) == 0
+          for: 1m
+          labels: { severity: critical }
+          annotations:
+            summary: "No ReadTrack backend pod is being scraped in {{ .Release.Namespace }}"
+        - alert: ReadTrackHighErrorRate
+          expr: |
+            sum(rate(readtrack_http_requests_total{namespace="{{ .Release.Namespace }}", status=~"5.."}[5m]))
+              / clamp_min(sum(rate(readtrack_http_requests_total{namespace="{{ .Release.Namespace }}"}[5m])), 1e-9) > 0.05
+          for: 2m
+          labels: { severity: warning }
+          annotations:
+            summary: "More than 5% of ReadTrack requests fail with 5xx"
+        - alert: ReadTrackSlowRequests
+          expr: |
+            histogram_quantile(0.95, sum by (le) (rate(readtrack_http_request_duration_seconds_bucket{namespace="{{ .Release.Namespace }}"}[5m]))) > 0.5
+          for: 5m
+          labels: { severity: warning }
+          annotations:
+            summary: "ReadTrack p95 latency is above 500ms"
+        - alert: ReadTrackDatabaseUnreachable
+          expr: min(readtrack_db_up{namespace="{{ .Release.Namespace }}"}) == 0
+          for: 1m
+          labels: { severity: critical }
+          annotations:
+            summary: "Readiness checks cannot reach PostgreSQL"
+{{- end }}

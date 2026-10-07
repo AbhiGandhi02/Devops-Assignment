@@ -1,0 +1,40 @@
+# Argo CD Application: renders helm/readtrack from GitHub with the prod values plus
+# gitops/values-gitops.yaml (image tag bumped by CI) and keeps namespace readtrack-prod
+# identical to Git - automated sync, prune deleted objects, self-heal manual drift.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: readtrack-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: readtrack
+  source:
+    repoURL: https://github.com/AbhiGandhi02/Devops-Assignment.git
+    targetRevision: main
+    path: Final DevOps Project/helm/readtrack
+    helm:
+      releaseName: readtrack
+      valueFiles:
+        - values-prod.yaml
+        - ../../gitops/values-gitops.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: readtrack-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: restricted
+        environment: prod
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

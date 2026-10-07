@@ -1,0 +1,17 @@
+# AppProject: limits what the ReadTrack apps may do - only this Git repo, only the
+# readtrack-* namespaces, and no cluster-scoped objects except Namespaces.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: readtrack
+  namespace: argocd
+spec:
+  description: ReadTrack - Final DevOps Project (Abhi Gandhi, 24bcs10397)
+  sourceRepos:
+    - https://github.com/AbhiGandhi02/Devops-Assignment.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: readtrack-*
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace

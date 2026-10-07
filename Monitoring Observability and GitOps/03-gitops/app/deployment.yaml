@@ -6,7 +6,7 @@ metadata:
   namespace: gitops-demo
   labels: {app: guestbook}
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels: {app: guestbook}
   template:
@@ -20,7 +20,7 @@ spec:
             - {name: http, containerPort: 9898}
           env:
             - name: PODINFO_UI_MESSAGE
-              value: "Deployed by Argo CD from Git - v1"
+              value: "Deployed by Argo CD from Git - v2"
           envFrom:
             - configMapRef: {name: guestbook-config}
           readinessProbe:

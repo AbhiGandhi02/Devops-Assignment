@@ -1,0 +1,10 @@
+# BUG: registry host does not exist -> DNS lookup fails during pull -> ErrImagePull
+apiVersion: v1
+kind: Pod
+metadata:
+  name: search-api
+  namespace: troubleshoot
+spec:
+  containers:
+    - name: api
+      image: registry.abhi-devops.invalid/search-api:1.0.0

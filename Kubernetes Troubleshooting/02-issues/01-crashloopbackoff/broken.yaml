@@ -1,0 +1,21 @@
+# BUG: the app exits 1 because DATABASE_URL is not set -> CrashLoopBackOff
+apiVersion: v1
+kind: Pod
+metadata:
+  name: payments-api
+  namespace: troubleshoot
+spec:
+  containers:
+    - name: api
+      image: python:3.12-alpine
+      command:
+        - python3
+        - -c
+        - |
+          import os, sys, time
+          url = os.environ.get("DATABASE_URL")
+          if not url:
+              print("FATAL: DATABASE_URL environment variable is missing", file=sys.stderr)
+              sys.exit(1)
+          print(f"payments-api connected to {url}", flush=True)
+          time.sleep(3600)

@@ -1,0 +1,10 @@
+# BUG: tag "1.27-alpne" is a typo - it does not exist on Docker Hub
+apiVersion: v1
+kind: Pod
+metadata:
+  name: catalog-web
+  namespace: troubleshoot
+spec:
+  containers:
+    - name: web
+      image: nginx:1.27-alpne

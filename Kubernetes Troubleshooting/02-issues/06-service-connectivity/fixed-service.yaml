@@ -1,0 +1,12 @@
+# FIX: selector matches the Pod label and targetPort matches containerPort
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-api
+  namespace: troubleshoot
+spec:
+  selector:
+    app: orders-api
+  ports:
+    - port: 80
+      targetPort: 5678

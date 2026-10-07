@@ -1,0 +1,15 @@
+# FIX: right-size the requests to what the job really needs
+apiVersion: v1
+kind: Pod
+metadata:
+  name: report-worker
+  namespace: troubleshoot
+spec:
+  containers:
+    - name: worker
+      image: busybox:1.36
+      command: ["sh", "-c", "echo report-worker started; sleep 3600"]
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi

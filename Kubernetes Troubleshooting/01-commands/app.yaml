@@ -1,0 +1,36 @@
+# A small healthy app used to practise every troubleshooting command.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orbit-shop
+  namespace: troubleshoot
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: orbit-shop
+  template:
+    metadata:
+      labels:
+        app: orbit-shop
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests: { cpu: 20m, memory: 32Mi }
+            limits: { cpu: 100m, memory: 64Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orbit-shop
+  namespace: troubleshoot
+spec:
+  selector:
+    app: orbit-shop
+  ports:
+    - port: 80
+      targetPort: 80

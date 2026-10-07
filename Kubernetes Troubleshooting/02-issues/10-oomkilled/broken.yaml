@@ -1,0 +1,15 @@
+# BUG: the job loads ~150Mi into memory but its limit is 32Mi -> OOMKilled
+apiVersion: v1
+kind: Pod
+metadata:
+  name: image-resizer
+  namespace: troubleshoot
+spec:
+  restartPolicy: Never
+  containers:
+    - name: resizer
+      image: python:3.12-alpine
+      command: ["python3", "-c", "data = bytearray(150 * 1024 * 1024); print('resized batch using', len(data) // 1048576, 'MiB')"]
+      resources:
+        limits:
+          memory: 32Mi

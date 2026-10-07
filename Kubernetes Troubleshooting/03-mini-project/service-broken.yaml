@@ -1,0 +1,13 @@
+# The "break it" step of the mini project: selector no longer matches the Pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: troubleshooting-service
+  namespace: ts-project
+spec:
+  type: ClusterIP
+  selector:
+    app: wrong-app
+  ports:
+    - port: 80
+      targetPort: 80

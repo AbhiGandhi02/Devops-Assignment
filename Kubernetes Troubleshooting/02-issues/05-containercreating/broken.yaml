@@ -1,0 +1,17 @@
+# BUG: mounts a ConfigMap that was never created -> stuck in ContainerCreating (FailedMount)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: inventory-web
+  namespace: troubleshoot
+spec:
+  containers:
+    - name: web
+      image: nginx:1.27-alpine
+      volumeMounts:
+        - name: site
+          mountPath: /usr/share/nginx/html
+  volumes:
+    - name: site
+      configMap:
+        name: inventory-site

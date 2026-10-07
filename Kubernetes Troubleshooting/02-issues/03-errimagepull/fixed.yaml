@@ -1,0 +1,12 @@
+# FIX: pull from a registry that exists (Docker Hub). For a real private registry
+# you would also add imagePullSecrets.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: search-api
+  namespace: troubleshoot
+spec:
+  containers:
+    - name: api
+      image: hashicorp/http-echo:1.0
+      args: ["-text=search-api ok", "-listen=:5678"]

@@ -1,0 +1,13 @@
+# BUG 1: selector app=order-api (missing "s") matches no Pods -> no endpoints
+# BUG 2: targetPort 8080, but the container listens on 5678
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-api
+  namespace: troubleshoot
+spec:
+  selector:
+    app: order-api
+  ports:
+    - port: 80
+      targetPort: 8080

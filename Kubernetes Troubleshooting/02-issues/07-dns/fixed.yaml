@@ -1,0 +1,14 @@
+# FIX: use the real Service FQDN <service>.<namespace>.svc.cluster.local
+apiVersion: v1
+kind: Pod
+metadata:
+  name: checkout-client
+  namespace: troubleshoot
+spec:
+  containers:
+    - name: client
+      image: curlimages/curl:8.10.1
+      env:
+        - name: ORDERS_URL
+          value: http://orders-api.troubleshoot.svc.cluster.local
+      command: ["sh", "-c", "while true; do echo \"$(date +%T) calling $ORDERS_URL\"; curl -s -m 3 $ORDERS_URL || echo 'request failed'; sleep 5; done"]

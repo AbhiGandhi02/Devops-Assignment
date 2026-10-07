@@ -1,0 +1,9 @@
+# FIX: create the ConfigMap the Pod depends on. The kubelet retries the mount
+# automatically, so the existing Pod starts without being recreated.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inventory-site
+  namespace: troubleshoot
+data:
+  index.html: "inventory-web is up\n"

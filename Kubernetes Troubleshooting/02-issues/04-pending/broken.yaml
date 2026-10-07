@@ -1,0 +1,15 @@
+# BUG: requests 32 CPUs and 64Gi of memory - no node can satisfy it -> Pending forever
+apiVersion: v1
+kind: Pod
+metadata:
+  name: report-worker
+  namespace: troubleshoot
+spec:
+  containers:
+    - name: worker
+      image: busybox:1.36
+      command: ["sh", "-c", "echo report-worker started; sleep 3600"]
+      resources:
+        requests:
+          cpu: "32"
+          memory: 64Gi

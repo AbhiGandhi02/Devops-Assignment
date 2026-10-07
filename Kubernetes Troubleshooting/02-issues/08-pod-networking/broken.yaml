@@ -1,0 +1,16 @@
+# BUG: the app binds to 127.0.0.1, so it answers inside its own container but
+# refuses every connection that arrives on the Pod IP (other Pods, Services).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ledger-api
+  namespace: troubleshoot
+  labels:
+    app: ledger-api
+spec:
+  containers:
+    - name: api
+      image: python:3.12-alpine
+      command: ["python3", "-m", "http.server", "8000", "--bind", "127.0.0.1"]
+      ports:
+        - containerPort: 8000

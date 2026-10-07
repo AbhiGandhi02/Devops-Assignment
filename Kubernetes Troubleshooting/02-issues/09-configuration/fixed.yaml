@@ -1,0 +1,31 @@
+# FIX: reference the key exactly as it exists in the ConfigMap (keys are case-sensitive)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: billing-config
+  namespace: troubleshoot
+data:
+  LOG_LEVEL: info
+  CURRENCY: INR
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: billing-api
+  namespace: troubleshoot
+spec:
+  containers:
+    - name: api
+      image: busybox:1.36
+      command: ["sh", "-c", "echo billing-api log_level=$LOG_LEVEL currency=$CURRENCY; sleep 3600"]
+      env:
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: billing-config
+              key: LOG_LEVEL
+        - name: CURRENCY
+          valueFrom:
+            configMapKeyRef:
+              name: billing-config
+              key: CURRENCY

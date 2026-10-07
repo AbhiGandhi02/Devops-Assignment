@@ -319,6 +319,13 @@ jobs:
         run: |
           kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.13.3/deploy/static/provider/kind/deploy.yaml
           kubectl -n ingress-nginx wait --for=condition=Available deployment/ingress-nginx-controller --timeout=240s
+          kubectl -n ingress-nginx wait --for=condition=complete job --all --timeout=120s
+          # "Available" comes a moment before the admission webhook answers - wait until it accepts a dry-run Ingress
+          for i in $(seq 1 30); do
+            kubectl create ingress webhook-probe -n default --class=nginx --rule="probe.local/*=probe:80" \
+              --dry-run=server -o name && break
+            sleep 4
+          done
       - name: helm upgrade --install
         run: |
           kubectl apply -f kubernetes/namespace.yaml

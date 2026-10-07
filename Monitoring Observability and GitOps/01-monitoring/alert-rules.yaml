@@ -1,0 +1,57 @@
+# Alerting rules for the podinfo demo app. The Prometheus Operator turns this
+# PrometheusRule into Prometheus rule files; firing alerts are sent to Alertmanager.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: podinfo-alerts
+  namespace: observability
+spec:
+  groups:
+    - name: podinfo.health
+      rules:
+        - alert: PodinfoDeploymentDown
+          expr: kube_deployment_status_replicas_available{namespace="observability", deployment=~"podinfo-.*"} == 0
+          for: 30s
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.deployment }} has no available replicas"
+            description: "Deployment {{ $labels.deployment }} in {{ $labels.namespace }} has had 0 available Pods for more than 30s."
+        - alert: PodinfoTargetMissing
+          expr: absent(up{namespace="observability", service="podinfo-backend"} == 1)
+          for: 30s
+          labels:
+            severity: critical
+            namespace: observability   # absent() of a comparison carries no labels, so add it here
+          annotations:
+            summary: "Prometheus cannot scrape any podinfo-backend Pod"
+    - name: observability.resources
+      rules:
+        - alert: ContainerHighCPU
+          expr: |
+            sum by (namespace, pod, container) (rate(container_cpu_usage_seconds_total{namespace="observability", container!=""}[1m]))
+              / sum by (namespace, pod, container) (kube_pod_container_resource_limits{namespace="observability", resource="cpu"}) > 0.8
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.pod }}/{{ $labels.container }} is using {{ $value | humanizePercentage }} of its CPU limit"
+            description: "CPU usage above 80% of the limit for more than 1 minute - the container is about to be throttled."
+        - alert: ContainerHighMemory
+          expr: |
+            sum by (namespace, pod, container) (container_memory_working_set_bytes{namespace="observability", container!=""})
+              / sum by (namespace, pod, container) (kube_pod_container_resource_limits{namespace="observability", resource="memory"}) > 0.8
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.pod }}/{{ $labels.container }} is above 80% of its memory limit (OOMKill risk)"
+    - name: podinfo.traffic
+      rules:
+        - alert: PodinfoHighRequestRate
+          expr: sum by (namespace, service) (rate(http_requests_total{namespace="observability"}[1m])) > 20
+          for: 30s
+          labels:
+            severity: info
+          annotations:
+            summary: "{{ $labels.service }} is serving {{ $value | humanize }} req/s"

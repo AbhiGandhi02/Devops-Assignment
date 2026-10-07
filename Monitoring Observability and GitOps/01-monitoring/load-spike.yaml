@@ -1,0 +1,28 @@
+# A short burst of heavy traffic (4 parallel workers, no sleep, 3 minutes)
+# used to make the PodinfoHighRequestRate / PodinfoHighCPU alerts fire.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: load-spike
+  namespace: observability
+spec:
+  parallelism: 4
+  completions: 4
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: curl
+          image: curlimages/curl:8.10.1
+          command: ["sh", "-c"]
+          args:
+            - |
+              end=$(( $(date +%s) + 180 ))
+              n=0
+              while [ $(date +%s) -lt $end ]; do
+                curl -s -o /dev/null -X POST -d "spike" http://podinfo-frontend:9898/echo
+                n=$((n+1))
+              done
+              echo "sent $n requests"

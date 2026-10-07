@@ -1,0 +1,29 @@
+# Steady background traffic so the dashboards and traces have data:
+# each replica POSTs to the frontend /echo about twice a second.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traffic
+  namespace: observability
+  labels: {app: traffic}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: traffic}
+  template:
+    metadata:
+      labels: {app: traffic}
+    spec:
+      containers:
+        - name: curl
+          image: curlimages/curl:8.10.1
+          command: ["sh", "-c"]
+          args:
+            - |
+              while true; do
+                curl -s -o /dev/null -X POST -d "hello from traffic" http://podinfo-frontend:9898/echo
+                curl -s -o /dev/null http://podinfo-frontend:9898/
+                sleep 0.5
+              done
+          resources:
+            requests: {cpu: 5m, memory: 8Mi}

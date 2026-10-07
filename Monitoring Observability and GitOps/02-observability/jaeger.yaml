@@ -1,0 +1,95 @@
+# Jaeger v2 all-in-one (in-memory storage) - receives OTLP traces from podinfo.
+# Jaeger v2 is built on the OpenTelemetry Collector, so its config is a collector config.
+# podinfo also pushes OTLP *logs*; Jaeger only stores traces, so I add a logs pipeline
+# with the "nop" exporter to accept and drop them (otherwise podinfo logs "Unimplemented").
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jaeger-config
+  namespace: observability
+data:
+  config.yaml: |
+    service:
+      extensions: [jaeger_storage, jaeger_query, healthcheckv2]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [jaeger_storage_exporter]
+        logs:
+          receivers: [otlp]
+          exporters: [nop]
+    extensions:
+      healthcheckv2:
+        use_v2: true
+        http:
+          endpoint: 0.0.0.0:13133
+      jaeger_query:
+        storage:
+          traces: memstore
+        http:
+          endpoint: 0.0.0.0:16686
+      jaeger_storage:
+        backends:
+          memstore:
+            memory:
+              max_traces: 50000
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    processors:
+      batch: {}
+    exporters:
+      jaeger_storage_exporter:
+        trace_storage: memstore
+      nop: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: observability
+  labels: {app: jaeger}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: jaeger}
+  template:
+    metadata:
+      labels: {app: jaeger}
+    spec:
+      containers:
+        - name: jaeger
+          image: quay.io/jaegertracing/jaeger:2.11.0
+          args: ["--config=/etc/jaeger/config.yaml"]
+          ports:
+            - {name: ui, containerPort: 16686}
+            - {name: otlp-grpc, containerPort: 4317}
+            - {name: otlp-http, containerPort: 4318}
+          readinessProbe:
+            httpGet: {path: /status, port: 13133}
+          volumeMounts:
+            - {name: config, mountPath: /etc/jaeger}
+          resources:
+            requests: {cpu: 20m, memory: 64Mi}
+            limits: {memory: 512Mi}
+      volumes:
+        - name: config
+          configMap: {name: jaeger-config}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: observability
+  labels: {app: jaeger}
+spec:
+  selector: {app: jaeger}
+  ports:
+    - {name: ui, port: 16686, targetPort: ui}
+    - {name: otlp-grpc, port: 4317, targetPort: otlp-grpc}
+    - {name: otlp-http, port: 4318, targetPort: otlp-http}

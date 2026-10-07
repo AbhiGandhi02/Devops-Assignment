@@ -1,0 +1,56 @@
+# Lightweight values for kube-prometheus-stack on my 2-node kind cluster.
+# Chart: prometheus-community/kube-prometheus-stack 92.1.0
+
+# kind runs etcd / scheduler / controller-manager / kube-proxy bound to 127.0.0.1,
+# so Prometheus cannot reach them - disable those scrape jobs to avoid DOWN targets.
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+prometheus:
+  prometheusSpec:
+    retention: 12h
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    # pick up ServiceMonitors / PodMonitors / PrometheusRules from every namespace,
+    # not only the ones labelled with the Helm release name
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+
+grafana:
+  # dashboards in any namespace with label grafana_dashboard=1 are loaded by the sidecar
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: ALL
+  persistence:
+    enabled: false
+  # extra data sources so Grafana can show all three pillars side by side
+  additionalDataSources:
+    - name: Loki
+      uid: loki
+      type: loki
+      access: proxy
+      url: http://loki.monitoring:3100
+    - name: Jaeger
+      uid: jaeger
+      type: jaeger
+      access: proxy
+      url: http://jaeger.observability:16686

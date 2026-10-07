@@ -1,0 +1,126 @@
+# Demo app for the monitoring + observability tasks.
+# podinfo-frontend  ->  podinfo-backend   (frontend calls backend on /echo)
+# Both expose Prometheus metrics on :9898/metrics and send OpenTelemetry traces to Jaeger.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: podinfo-backend
+  namespace: observability
+  labels: {app: podinfo, tier: backend}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: podinfo, tier: backend}
+  template:
+    metadata:
+      labels: {app: podinfo, tier: backend}
+    spec:
+      containers:
+        - name: podinfo
+          image: ghcr.io/stefanprodan/podinfo:6.15.0
+          command:
+            - ./podinfo
+            - --port=9898
+            - --level=debug
+            - --otel-service-name=podinfo-backend
+            - --random-delay=true
+            - --random-delay-unit=ms
+            - --random-delay-min=20
+            - --random-delay-max=200
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://jaeger.observability:4317
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
+            - name: PODINFO_UI_MESSAGE
+              value: "backend - Abhi Gandhi 24bcs10397"
+          ports:
+            - {name: http, containerPort: 9898}
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+          resources:
+            requests: {cpu: 20m, memory: 32Mi}
+            limits: {cpu: 500m, memory: 128Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: podinfo-backend
+  namespace: observability
+  labels: {app: podinfo, tier: backend}
+spec:
+  selector: {app: podinfo, tier: backend}
+  ports:
+    - {name: http, port: 9898, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: podinfo-frontend
+  namespace: observability
+  labels: {app: podinfo, tier: frontend}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: podinfo, tier: frontend}
+  template:
+    metadata:
+      labels: {app: podinfo, tier: frontend}
+    spec:
+      containers:
+        - name: podinfo
+          image: ghcr.io/stefanprodan/podinfo:6.15.0
+          command:
+            - ./podinfo
+            - --port=9898
+            - --level=debug
+            - --otel-service-name=podinfo-frontend
+            - --backend-url=http://podinfo-backend:9898/echo
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://jaeger.observability:4317
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
+            - name: PODINFO_UI_MESSAGE
+              value: "frontend - Abhi Gandhi 24bcs10397"
+          ports:
+            - {name: http, containerPort: 9898}
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+          resources:
+            requests: {cpu: 20m, memory: 32Mi}
+            limits: {cpu: 500m, memory: 128Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: podinfo-frontend
+  namespace: observability
+  labels: {app: podinfo, tier: frontend}
+spec:
+  selector: {app: podinfo, tier: frontend}
+  ports:
+    - {name: http, port: 9898, targetPort: http}
+---
+# Tells the Prometheus Operator to scrape every Service labelled app=podinfo on port "http"
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: podinfo
+  namespace: observability
+spec:
+  selector:
+    matchLabels: {app: podinfo}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

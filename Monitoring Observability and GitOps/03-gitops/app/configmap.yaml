@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: guestbook-config
+  namespace: gitops-demo
+data:
+  APP_ENV: "gitops-lab"
+  OWNER: "Abhi Gandhi (24bcs10397)"

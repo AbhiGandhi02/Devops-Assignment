@@ -1,0 +1,30 @@
+# Desired state for the GitOps demo. Argo CD keeps the cluster equal to this file.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guestbook
+  namespace: gitops-demo
+  labels: {app: guestbook}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: guestbook}
+  template:
+    metadata:
+      labels: {app: guestbook}
+    spec:
+      containers:
+        - name: podinfo
+          image: ghcr.io/stefanprodan/podinfo:6.15.0
+          ports:
+            - {name: http, containerPort: 9898}
+          env:
+            - name: PODINFO_UI_MESSAGE
+              value: "Deployed by Argo CD from Git - v1"
+          envFrom:
+            - configMapRef: {name: guestbook-config}
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 200m, memory: 64Mi}

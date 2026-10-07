@@ -1,0 +1,62 @@
+# Session 16 - CD pipeline. Runs only after the CI workflow succeeds on main,
+# then deploys the exact image CI pushed (tagged with the commit SHA) to a
+# Kubernetes (kind) cluster created on the runner, and smoke-tests it.
+name: "S16 CD - deploy orbit-tasks"
+
+on:
+  workflow_run:
+    workflows: ["S16 CI - orbit-tasks"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  IMAGE: ghcr.io/abhigandhi02/orbit-tasks
+
+jobs:
+  deploy:
+    name: Deploy to Kubernetes (kind)
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: kind-staging
+    defaults:
+      run:
+        working-directory: "CI-CD and GitHub Actions"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Pick image tag
+        id: tag
+        run: echo "sha=${{ github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_OUTPUT"
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: s16-cd
+      - name: Pull image from GHCR and load it into kind
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull $IMAGE:${{ steps.tag.outputs.sha }}
+          kind load docker-image $IMAGE:${{ steps.tag.outputs.sha }} --name s16-cd
+      - name: Deploy
+        run: |
+          sed "s|IMAGE_PLACEHOLDER|$IMAGE:${{ steps.tag.outputs.sha }}|" k8s/deployment.yaml | kubectl apply -f -
+          kubectl apply -f k8s/service.yaml
+          kubectl rollout status deployment/orbit-tasks --timeout=180s
+          kubectl get deploy,pods,svc -o wide
+      - name: Smoke test through the Service
+        run: |
+          kubectl port-forward svc/orbit-tasks 8080:80 >/dev/null 2>&1 &
+          sleep 3
+          curl -sf localhost:8080/ | tee deploy-report.txt
+          curl -sf -X POST localhost:8080/tasks -H 'Content-Type: application/json' -d '{"title":"deployed by CD"}' | tee -a deploy-report.txt
+          curl -sf localhost:8080/tasks | tee -a deploy-report.txt
+          kubectl get pods -o wide >> deploy-report.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deploy-report
+          path: "CI-CD and GitHub Actions/deploy-report.txt"

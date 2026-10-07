@@ -1,0 +1,147 @@
+# Session 16 - CI pipeline for orbit-tasks.
+# Lint -> Test (matrix) -> Build artifact -> Docker image -> push to GHCR.
+name: "S16 CI - orbit-tasks"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "CI-CD and GitHub Actions/**"
+      - ".github/workflows/s16-*.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "CI-CD and GitHub Actions/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/abhigandhi02/orbit-tasks
+
+defaults:
+  run:
+    working-directory: "CI-CD and GitHub Actions"
+
+jobs:
+  runner-info:
+    name: Runner info
+    runs-on: ubuntu-latest
+    steps:
+      - name: Where am I running?
+        run: |
+          echo "Runner OS      : $RUNNER_OS ($RUNNER_ARCH)"
+          echo "Runner name    : $RUNNER_NAME"
+          echo "Workflow / run : $GITHUB_WORKFLOW #$GITHUB_RUN_NUMBER"
+          echo "Triggered by   : $GITHUB_EVENT_NAME from $GITHUB_ACTOR"
+          echo "Commit         : $GITHUB_SHA"
+          nproc; free -h | head -2
+        working-directory: .
+
+  lint:
+    name: Lint (flake8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: "CI-CD and GitHub Actions/requirements-dev.txt"
+      - run: pip install -r requirements-dev.txt
+      - run: flake8 app tests
+
+  test:
+    name: Test (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Run unit tests
+        run: pytest -v --cov=app --cov-report=term --cov-report=xml --junitxml=test-results.xml
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-py${{ matrix.python }}
+          path: |
+            CI-CD and GitHub Actions/test-results.xml
+            CI-CD and GitHub Actions/coverage.xml
+
+  build:
+    name: Build package
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: ./build.sh
+      - run: cat build/build-info.txt
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbit-tasks-build
+          path: "CI-CD and GitHub Actions/build/orbit-tasks.tar.gz"
+          retention-days: 7
+
+  secrets-demo:
+    name: Secrets demo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use secrets without leaking them
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEMO_API_KEY: ${{ secrets.DEMO_API_KEY }}
+        working-directory: .
+        run: |
+          echo "GITHUB_TOKEN is injected automatically, length=${#TOKEN}"
+          echo "Printing it is masked by the runner: $TOKEN"
+          if [ -n "$DEMO_API_KEY" ]; then echo "DEMO_API_KEY is set (value masked: $DEMO_API_KEY)";
+          else echo "DEMO_API_KEY not configured - add it under Settings > Secrets and variables > Actions"; fi
+
+  docker:
+    name: Docker build & push
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: orbit-tasks-build
+          path: "CI-CD and GitHub Actions/downloaded"
+      - run: ls -l downloaded && tar -tzf downloaded/orbit-tasks.tar.gz | head
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build (and push on main)
+        uses: docker/build-push-action@v6
+        with:
+          context: "CI-CD and GitHub Actions"
+          build-args: APP_VERSION=${{ github.sha }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:latest
+      - name: Smoke-test the pushed image
+        if: github.event_name != 'pull_request'
+        run: |
+          docker run -d --name smoke -p 8000:8000 ${{ env.IMAGE }}:${{ github.sha }}
+          sleep 4
+          curl -sf localhost:8000/health
+          curl -sf localhost:8000/

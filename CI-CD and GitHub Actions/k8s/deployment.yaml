@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orbit-tasks
+  labels:
+    app: orbit-tasks
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: orbit-tasks
+  template:
+    metadata:
+      labels:
+        app: orbit-tasks
+    spec:
+      containers:
+        - name: orbit-tasks
+          image: IMAGE_PLACEHOLDER      # replaced by the CD workflow with ghcr.io/...:<sha>
+          imagePullPolicy: IfNotPresent # image is preloaded into kind with 'kind load'
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: 8000 }
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 250m, memory: 128Mi }

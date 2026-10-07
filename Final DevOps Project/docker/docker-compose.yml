@@ -1,0 +1,51 @@
+# Full ReadTrack stack on one machine:  docker compose -f docker/docker-compose.yml up --build
+#   http://localhost:3000  -> frontend (override with FRONTEND_PORT / BACKEND_PORT) (nginx, proxies /api to the backend)
+#   http://localhost:8000  -> backend  (FastAPI, /docs, /metrics)
+name: readtrack
+
+services:
+  postgres:
+    image: public.ecr.aws/docker/library/postgres:16-alpine
+    environment:
+      POSTGRES_DB: readtrack
+      POSTGRES_USER: readtrack
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-readtrack-local}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U readtrack -d readtrack"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ../application/backend
+      dockerfile: ../../docker/backend.Dockerfile
+    image: readtrack-backend:compose
+    environment:
+      DATABASE_URL: postgresql+psycopg://readtrack:${POSTGRES_PASSWORD:-readtrack-local}@postgres:5432/readtrack
+      APP_ENV: compose
+      WELCOME_MESSAGE: "Running on docker compose"
+    # run the Alembic migration, then start the API
+    command: ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: ../application/frontend
+      dockerfile: ../../docker/frontend.Dockerfile
+    image: readtrack-frontend:compose
+    environment:
+      BACKEND_URL: http://backend:8000
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-3000}:8080"
+
+volumes:
+  pgdata:

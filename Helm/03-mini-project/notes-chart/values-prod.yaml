@@ -1,0 +1,17 @@
+# Production overrides - only what differs from values.yaml
+replicaCount: 3
+
+image:
+  tag: "1.27-alpine"
+
+app:
+  environment: production
+  message: "Notes app - production"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi

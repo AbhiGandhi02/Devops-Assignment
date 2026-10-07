@@ -1,0 +1,25 @@
+# Default (development) values
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: "1.26-alpine"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  nodePort: 30090
+
+app:
+  name: notes-app
+  environment: development
+  message: "Welcome to the Notes app"
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 32Mi
+  limits:
+    cpu: 100m
+    memory: 64Mi

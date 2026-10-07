@@ -1,0 +1,5 @@
+{{ .Values.app.name }} ({{ .Values.app.environment }}) deployed as release "{{ .Release.Name }}", revision {{ .Release.Revision }}.
+
+Try it:
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ .Release.Name }}-svc 8090:{{ .Values.service.port }}
+  curl http://localhost:8090

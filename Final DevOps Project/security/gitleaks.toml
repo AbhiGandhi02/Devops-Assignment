@@ -16,4 +16,4 @@ description = "documented placeholders and LocalStack dummy credentials are not 
 regexes = ['''change-me''', '''readtrack-local''', '''access_key\s*=\s*"test"''', '''secret_key\s*=\s*"test"''']
 # *.tfstate is git-ignored and never committed: the kind cluster's state holds its admin client key
 # (gitleaks found it in my working tree on the first local scan - that is exactly why it is ignored)
-paths = ['''(^|/)node_modules/''', '''(^|/)reports/''', '''(^|/)\.terraform/''', '''(^|/)screenshots/''', '''\.tfstate(\.backup)?$''', '''(^|/)\.kubeconfig$''']
+paths = ['''(^|/)node_modules/''', '''(^|/)reports/''', '''(^|/)transcripts/''', '''(^|/)\.terraform/''', '''(^|/)screenshots/''', '''\.tfstate(\.backup)?$''', '''(^|/)\.kubeconfig$''']

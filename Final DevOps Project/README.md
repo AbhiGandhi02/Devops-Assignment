@@ -471,6 +471,7 @@ readtrack-frontend   2       ghcr.io/abhigandhi02/readtrack-frontend:7f20ce4fd41
 |---|---|---|
 | #1 | `helm install` failed: `failed calling webhook "validate.nginx.ingress.kubernetes.io"` - the controller was "Available" before its admission webhook answered | wait until a server-side dry-run Ingress is accepted |
 | #3 | `jobs.batch "ingress-nginx-admission-patch" not found` - I waited on the admission Jobs, which delete themselves | wait on `rollout status` + the dry-run loop instead |
+| #8 | Security gate: `postgres-url-with-password@README.md` - my own README described the gitleaks demo with an example connection URL whose password part was the placeholder `<random>`, and my custom rule matched it as a password | reworded the README; the gate did exactly its job, even on documentation |
 | #5 | GitOps bump: two runs bumped the same line at the same time, `git pull --rebase` conflicted | the job now has its own `concurrency` group, always resets to the newest `origin/main` before editing, and never moves the tag backwards (`git merge-base --is-ancestor`) |
 
 ## 10. DevSecOps implementation
@@ -530,8 +531,8 @@ denial of service), which is why removing unused tooling from runtime images mat
 ![gate fail](screenshots/k21-32-security-gate-fail.png)
 ![Trivy + gate in the CI run](screenshots/k21-65-ci-trivy-and-gate.png)
 
-The secrets screenshot also shows my custom rule working: a generated `postgresql://user:<random>@db`
-URL in a temp file is reported as `postgres-url-with-password` (generated at runtime - I never
+The secrets screenshot also shows my custom rule working: a PostgreSQL URL with a randomly
+generated inline password in a temp file is reported as `postgres-url-with-password` (generated at runtime - I never
 commit a fake secret, gitleaks would rightly flag it).
 
 ## 11. Monitoring, logs and metrics

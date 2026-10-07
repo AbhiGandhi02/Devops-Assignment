@@ -1,0 +1,2 @@
+# Accepted risks go here as CVE IDs, each with a reason and an expiry date.
+# Example: CVE-2099-0001  # not reachable from our code, review by 2026-12-31

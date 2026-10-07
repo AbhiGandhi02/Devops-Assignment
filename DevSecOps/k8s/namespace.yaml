@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: orbit-vault
+  labels:
+    # Pod Security Admission: reject any Pod that is not "restricted"-compliant
+    pod-security.kubernetes.io/enforce: restricted

@@ -1,0 +1,10 @@
+# Trivy (SCA + image + IaC scanning) shared settings
+severity:
+  - HIGH
+  - CRITICAL
+scan:
+  scanners:
+    - vuln
+    - misconfig
+vulnerability:
+  ignore-unfixed: true   # only fail on vulnerabilities that actually have a fix available

@@ -1,0 +1,2 @@
+# Bandit (SAST) configuration - tests are excluded because assert is expected there.
+exclude_dirs: ["tests", ".venv"]

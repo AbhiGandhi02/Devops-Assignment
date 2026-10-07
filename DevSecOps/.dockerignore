@@ -1,0 +1,10 @@
+.venv
+reports
+tests
+__pycache__
+*.pyc
+.pytest_cache
+screenshots
+*.md
+security
+k8s

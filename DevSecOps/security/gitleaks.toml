@@ -1,0 +1,15 @@
+# Gitleaks (secret scanning) - default ruleset plus one custom rule for our own token format.
+title = "orbit-vault gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "orbit-vault-api-token"
+description = "Orbit Vault API token"
+regex = '''ovt_[A-Za-z0-9]{32}'''
+keywords = ["ovt_"]
+
+[allowlist]
+description = "unit-test placeholder token is not a secret"
+regexes = ['''unit-test-token''']

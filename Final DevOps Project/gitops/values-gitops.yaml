@@ -2,7 +2,7 @@
 # The CI pipeline rewrites image.tag here after a green build (commit SHA),
 # so a merge to main is all it takes to roll out a new version.
 image:
-  tag: "060be798b4caa5007d7ea4429f31c0304a9a0ce7"
+  tag: "89c2ba0719cad3a9a3730e7ad16f3e128f3f38c6"
 database:
   existingSecret: readtrack-db
 config:

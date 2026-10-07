@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3d4a55"/>
+    </marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#e8762c"/>
+    </marker>
+    <style>
+      .t { font-size: 15px; font-weight: bold; fill: #1d2623; }
+      .s { font-size: 12px; fill: #3d4a55; }
+      .x { font-size: 11px; fill: #55616b; }
+      .h { font-size: 13px; font-weight: bold; fill: #ffffff; }
+      .ln { stroke: #3d4a55; stroke-width: 1.8; fill: none; marker-end: url(#a); }
+      .go { stroke: #e8762c; stroke-width: 2.2; fill: none; marker-end: url(#g); stroke-dasharray: 7 4; }
+    </style>
+  </defs>
+  <rect width="1400" height="860" fill="#f7f9f8"/>
+  <text x="700" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#176b5b">ReadTrack - Final DevOps Project architecture</text>
+  <text x="700" y="56" text-anchor="middle" class="s">Abhi Gandhi (24bcs10397) - code to monitored Kubernetes, with CI/CD, DevSecOps, IaC and GitOps</text>
+
+  <!-- developer + github -->
+  <rect x="30" y="90" width="150" height="80" rx="10" fill="#ffffff" stroke="#3d4a55"/>
+  <text x="105" y="122" text-anchor="middle" class="t">Developer</text>
+  <text x="105" y="142" text-anchor="middle" class="s">laptop: pytest, compose,</text>
+  <text x="105" y="157" text-anchor="middle" class="s">local scans, git push</text>
+
+  <rect x="230" y="90" width="170" height="80" rx="10" fill="#ffffff" stroke="#3d4a55"/>
+  <text x="315" y="122" text-anchor="middle" class="t">GitHub repo</text>
+  <text x="315" y="142" text-anchor="middle" class="s">Devops-Assignment / main</text>
+  <text x="315" y="157" text-anchor="middle" class="x">"Final DevOps Project/"</text>
+  <path class="ln" d="M180 130 H228"/>
+  <text x="204" y="122" text-anchor="middle" class="x">push</text>
+
+  <!-- pipeline -->
+  <rect x="450" y="78" width="910" height="200" rx="12" fill="#eef4fb" stroke="#4a78a8"/>
+  <rect x="450" y="78" width="910" height="28" rx="12" fill="#4a78a8"/>
+  <text x="905" y="97" text-anchor="middle" class="h">GitHub Actions - .github/workflows/final-project.yml (12 jobs)</text>
+  <g class="s">
+    <rect x="465" y="120" width="135" height="58" rx="8" fill="#fff" stroke="#4a78a8"/>
+    <text x="532" y="142" text-anchor="middle" font-weight="bold">Build + test</text>
+    <text x="532" y="158" text-anchor="middle" class="x">ruff, pytest (95%),</text>
+    <text x="532" y="171" text-anchor="middle" class="x">vite build, tf/helm lint</text>
+    <rect x="615" y="120" width="135" height="58" rx="8" fill="#fff" stroke="#4a78a8"/>
+    <text x="682" y="142" text-anchor="middle" font-weight="bold">SAST / SCA</text>
+    <text x="682" y="158" text-anchor="middle" class="x">bandit, semgrep,</text>
+    <text x="682" y="171" text-anchor="middle" class="x">pip-audit, npm audit</text>
+    <rect x="765" y="120" width="135" height="58" rx="8" fill="#fff" stroke="#4a78a8"/>
+    <text x="832" y="142" text-anchor="middle" font-weight="bold">Secrets + build</text>
+    <text x="832" y="158" text-anchor="middle" class="x">gitleaks, docker build</text>
+    <text x="832" y="171" text-anchor="middle" class="x">backend + frontend</text>
+    <rect x="915" y="120" width="135" height="58" rx="8" fill="#fff" stroke="#4a78a8"/>
+    <text x="982" y="142" text-anchor="middle" font-weight="bold">Trivy</text>
+    <text x="982" y="158" text-anchor="middle" class="x">2 images + IaC config</text>
+    <text x="982" y="171" text-anchor="middle" class="x">HIGH/CRITICAL</text>
+    <rect x="1065" y="120" width="135" height="58" rx="8" fill="#fde9e7" stroke="#b42318"/>
+    <text x="1132" y="142" text-anchor="middle" font-weight="bold">Security gate</text>
+    <text x="1132" y="158" text-anchor="middle" class="x">security/gate.py</text>
+    <text x="1132" y="171" text-anchor="middle" class="x">8 policy checks</text>
+    <rect x="1215" y="120" width="130" height="58" rx="8" fill="#fff" stroke="#4a78a8"/>
+    <text x="1280" y="142" text-anchor="middle" font-weight="bold">Push to GHCR</text>
+    <text x="1280" y="158" text-anchor="middle" class="x">tag = commit SHA</text>
+    <text x="1280" y="171" text-anchor="middle" class="x">(never latest)</text>
+  </g>
+  <path class="ln" d="M600 149 H613"/><path class="ln" d="M750 149 H763"/><path class="ln" d="M900 149 H913"/>
+  <path class="ln" d="M1050 149 H1063"/><path class="ln" d="M1200 149 H1213"/>
+  <rect x="915" y="198" width="210" height="64" rx="8" fill="#fff" stroke="#4a78a8"/>
+  <text x="1020" y="220" text-anchor="middle" class="s" font-weight="bold">Deploy + smoke test</text>
+  <text x="1020" y="236" text-anchor="middle" class="x">kind in the runner, helm install,</text>
+  <text x="1020" y="250" text-anchor="middle" class="x">helm test, curl via Ingress</text>
+  <rect x="1150" y="198" width="195" height="64" rx="8" fill="#fff4ec" stroke="#e8762c"/>
+  <text x="1247" y="220" text-anchor="middle" class="s" font-weight="bold">GitOps bump</text>
+  <text x="1247" y="236" text-anchor="middle" class="x">commits the SHA into</text>
+  <text x="1247" y="250" text-anchor="middle" class="x">gitops/values-gitops.yaml</text>
+  <path class="ln" d="M1280 178 V196"/>
+  <path class="ln" d="M1222 178 L1127 210"/>
+  <path class="go" d="M1150 240 C 800 300 420 260 330 172"/>
+  <text x="640" y="285" class="x" fill="#e8762c">bot commit to main (tag bump)</text>
+  <path class="ln" d="M400 120 H448"/>
+
+  <!-- GHCR -->
+  <rect x="1215" y="300" width="145" height="62" rx="10" fill="#ffffff" stroke="#3d4a55"/>
+  <text x="1287" y="326" text-anchor="middle" class="t">GHCR</text>
+  <text x="1287" y="345" text-anchor="middle" class="x">readtrack-backend / -frontend</text>
+  <path class="ln" d="M1290 262 V298"/>
+
+  <!-- terraform -->
+  <rect x="30" y="320" width="370" height="250" rx="12" fill="#f3effa" stroke="#6c4ab0"/>
+  <rect x="30" y="320" width="370" height="28" rx="12" fill="#6c4ab0"/>
+  <text x="215" y="339" text-anchor="middle" class="h">Terraform (IaC)</text>
+  <rect x="45" y="360" width="340" height="128" rx="8" fill="#fff" stroke="#6c4ab0"/>
+  <text x="215" y="380" text-anchor="middle" class="s" font-weight="bold">AWS on LocalStack 4.12 (ap-south-1)</text>
+  <text x="58" y="400" class="x">VPC 10.42.0.0/16, 2 public + 2 private subnets in 2 AZs</text>
+  <text x="58" y="416" class="x">IGW, NAT gateway, route tables, node security group</text>
+  <text x="58" y="432" class="x">IAM roles for EKS cluster + node group</text>
+  <text x="58" y="448" class="x">S3 artifacts bucket (KMS CMK, versioned, lifecycle)</text>
+  <text x="58" y="464" class="x">remote state: S3 bucket + native lockfile (bootstrap/)</text>
+  <text x="58" y="480" class="x">EKS + node group: enable_eks=true (real AWS / LS Pro)</text>
+  <rect x="45" y="500" width="340" height="56" rx="8" fill="#fff" stroke="#6c4ab0"/>
+  <text x="215" y="522" text-anchor="middle" class="s" font-weight="bold">tehcyx/kind provider</text>
+  <text x="215" y="540" text-anchor="middle" class="x">creates kind cluster "abhi-final" (1 cp + 1 worker)</text>
+
+  <!-- cluster -->
+  <rect x="450" y="320" width="740" height="510" rx="12" fill="#eef7f3" stroke="#176b5b"/>
+  <rect x="450" y="320" width="740" height="28" rx="12" fill="#176b5b"/>
+  <text x="820" y="339" text-anchor="middle" class="h">kind cluster abhi-final (Kubernetes v1.34) - host ports 8180/8543</text>
+  <path class="ln" d="M385 528 H448"/>
+
+  <rect x="465" y="362" width="220" height="70" rx="8" fill="#fff" stroke="#176b5b"/>
+  <text x="575" y="384" text-anchor="middle" class="s" font-weight="bold">ingress-nginx</text>
+  <text x="575" y="401" text-anchor="middle" class="x">/api -> backend :8000</text>
+  <text x="575" y="416" text-anchor="middle" class="x">/ -> frontend :80</text>
+
+  <rect x="700" y="362" width="230" height="70" rx="8" fill="#fff4ec" stroke="#e8762c"/>
+  <text x="815" y="384" text-anchor="middle" class="s" font-weight="bold">Argo CD (ns argocd)</text>
+  <text x="815" y="401" text-anchor="middle" class="x">app readtrack-prod: auto-sync,</text>
+  <text x="815" y="416" text-anchor="middle" class="x">prune, self-heal; renders the Helm chart</text>
+  <path class="go" d="M300 172 C 330 260 600 300 760 360"/>
+  <text x="560" y="312" class="x" fill="#e8762c">polls Git</text>
+
+  <rect x="945" y="362" width="230" height="70" rx="8" fill="#fff" stroke="#c0392b"/>
+  <text x="1060" y="384" text-anchor="middle" class="s" font-weight="bold">kube-prometheus-stack</text>
+  <text x="1060" y="401" text-anchor="middle" class="x">Prometheus, Alertmanager, Grafana,</text>
+  <text x="1060" y="416" text-anchor="middle" class="x">ServiceMonitor + PrometheusRule</text>
+
+  <!-- namespace prod -->
+  <rect x="465" y="450" width="465" height="250" rx="10" fill="#ffffff" stroke="#176b5b" stroke-dasharray="5 3"/>
+  <text x="480" y="472" class="s" font-weight="bold">namespace readtrack-prod (PSS restricted) - Helm chart via Argo CD</text>
+  <rect x="480" y="485" width="135" height="80" rx="8" fill="#e3f1ed" stroke="#176b5b"/>
+  <text x="547" y="507" text-anchor="middle" class="s" font-weight="bold">frontend</text>
+  <text x="547" y="523" text-anchor="middle" class="x">nginx + Vite (uid 101)</text>
+  <text x="547" y="538" text-anchor="middle" class="x">Deployment + HPA</text>
+  <text x="547" y="553" text-anchor="middle" class="x">Service :80</text>
+  <rect x="630" y="485" width="140" height="80" rx="8" fill="#e3f1ed" stroke="#176b5b"/>
+  <text x="700" y="507" text-anchor="middle" class="s" font-weight="bold">backend</text>
+  <text x="700" y="523" text-anchor="middle" class="x">FastAPI (uid 10001)</text>
+  <text x="700" y="538" text-anchor="middle" class="x">HPA 3-8, probes, PDB</text>
+  <text x="700" y="553" text-anchor="middle" class="x">initContainer: alembic</text>
+  <rect x="785" y="485" width="130" height="80" rx="8" fill="#e3f1ed" stroke="#176b5b"/>
+  <text x="850" y="507" text-anchor="middle" class="s" font-weight="bold">PostgreSQL 16</text>
+  <text x="850" y="523" text-anchor="middle" class="x">StatefulSet + PVC</text>
+  <text x="850" y="538" text-anchor="middle" class="x">NetworkPolicy:</text>
+  <text x="850" y="553" text-anchor="middle" class="x">only backend may connect</text>
+  <path class="ln" d="M615 525 H628"/><path class="ln" d="M770 525 H783"/>
+  <rect x="480" y="580" width="435" height="105" rx="8" fill="#f7f9f8" stroke="#9aa5ad"/>
+  <text x="495" y="600" class="x">ConfigMap: APP_ENV, LOG_LEVEL, WELCOME_MESSAGE, DB_* (checksum rolls)</text>
+  <text x="495" y="618" class="x">Secret readtrack-db: created in-cluster, never in Git (existingSecret)</text>
+  <text x="495" y="636" class="x">Probes: startup + liveness /health, readiness /ready (DB ping)</text>
+  <text x="495" y="654" class="x">Pod security: runAsNonRoot, readOnlyRootFilesystem, drop ALL, seccomp</text>
+  <text x="495" y="672" class="x">/metrics: request count, latency histogram, books created, db_up</text>
+  <path class="ln" d="M575 432 V483"/><path class="ln" d="M815 432 V448"/>
+  <path class="ln" d="M1060 432 V442 H700 V483" stroke-dasharray="3 3"/>
+  <text x="880" y="439" class="x">scrape /metrics</text>
+
+  <rect x="945" y="450" width="230" height="250" rx="10" fill="#ffffff" stroke="#176b5b" stroke-dasharray="5 3"/>
+  <text x="960" y="472" class="s" font-weight="bold">other namespaces</text>
+  <text x="960" y="497" class="x">readtrack-dev: helm upgrade --install</text>
+  <text x="960" y="513" class="x">  (values-dev.yaml, upgrade + rollback)</text>
+  <text x="960" y="541" class="x">readtrack: plain manifests (kubectl -k)</text>
+  <text x="960" y="569" class="x">readtrack-ts: troubleshooting challenge</text>
+  <text x="960" y="585" class="x">  (8 injected bugs, fixed one by one)</text>
+  <text x="960" y="613" class="x">monitoring, argocd, ingress-nginx,</text>
+  <text x="960" y="629" class="x">kube-system (metrics-server)</text>
+
+  <path class="ln" d="M1287 362 C1287 420 1250 440 1180 440 L 935 440" stroke-dasharray="3 3"/>
+  <text x="1205" y="430" class="x">image pull</text>
+
+  <rect x="465" y="715" width="710" height="100" rx="10" fill="#fff" stroke="#3d4a55"/>
+  <text x="820" y="738" text-anchor="middle" class="s" font-weight="bold">User traffic</text>
+  <text x="820" y="758" text-anchor="middle" class="x">browser -> http://readtrack.localhost:8180 -> kind control-plane hostPort 80 -> ingress-nginx -> Services -> Pods</text>
+  <text x="820" y="776" text-anchor="middle" class="x">Grafana / Prometheus / Argo CD UIs via kubectl port-forward (13000 / 19090 / 18080)</text>
+  <text x="820" y="794" text-anchor="middle" class="x">docker compose (docker/) runs the same 3 services on the laptop: localhost:3100 / 8100</text>
+  
+  <rect x="30" y="600" width="370" height="230" rx="12" fill="#ffffff" stroke="#3d4a55"/>
+  <text x="215" y="625" text-anchor="middle" class="t">Flow of one change</text>
+  <text x="45" y="650" class="x">1. commit + push under "Final DevOps Project/"</text>
+  <text x="45" y="670" class="x">2. pipeline: tests -> scans -> gate -> images (SHA)</text>
+  <text x="45" y="690" class="x">3. images pushed to GHCR, smoke-tested on kind</text>
+  <text x="45" y="710" class="x">4. CI bot commits the new tag to gitops/</text>
+  <text x="45" y="730" class="x">5. Argo CD sees the commit, syncs readtrack-prod</text>
+  <text x="45" y="750" class="x">6. pods roll, Prometheus scrapes, Grafana shows it</text>
+  <text x="45" y="770" class="x">7. manual drift is reverted by self-heal</text>
+  <text x="45" y="800" class="x" fill="#e8762c">orange dashed = GitOps path</text>
+</svg>

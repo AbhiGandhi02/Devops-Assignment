@@ -11,7 +11,8 @@ spec:
     - name: readtrack.rules
       rules:
         - alert: ReadTrackBackendDown
-          expr: sum(up{namespace="{{ .Release.Namespace }}", service="{{ include "readtrack.fullname" . }}-backend"}) == 0
+          # "or vector(0)": with zero pods there are no targets at all, so sum() would return nothing
+          expr: (sum(up{namespace="{{ .Release.Namespace }}", service="{{ include "readtrack.fullname" . }}-backend"}) or vector(0)) == 0
           for: 1m
           labels: { severity: critical }
           annotations:

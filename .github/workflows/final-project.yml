@@ -365,21 +365,33 @@ jobs:
     needs: [deploy]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # one bump at a time - two runs once raced on the same line and the rebase conflicted
+    concurrency:
+      group: final-project-gitops-bump
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - name: Commit the new tag to gitops/values-gitops.yaml
         run: |
-          sed -i "s|^  tag: .*|  tag: \"${{ github.sha }}\"|" gitops/values-gitops.yaml
-          git diff
           git config user.name "readtrack-ci"
           git config user.email "readtrack-ci@users.noreply.github.com"
-          git add gitops/values-gitops.yaml
-          git commit -m "Final project GitOps: deploy readtrack ${GITHUB_SHA::7} to prod" || { echo "no change"; exit 0; }
-          # other people push to main too - rebase and retry instead of failing
           for i in 1 2 3 4 5; do
-            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            # always start from the newest main, then edit - never rebase a conflicting edit
+            git fetch -q origin main && git reset -q --hard origin/main
+            current=$(sed -n 's/^  tag: "\(.*\)"/\1/p' gitops/values-gitops.yaml)
+            if [ "$current" = "$GITHUB_SHA" ]; then echo "already deployed"; exit 0; fi
+            # only move forward: skip if a newer commit is already deployed
+            if git cat-file -e "$current^{commit}" 2>/dev/null && git merge-base --is-ancestor "$GITHUB_SHA" "$current"; then
+              echo "prod already runs $current, which is newer than $GITHUB_SHA - nothing to do"; exit 0
+            fi
+            sed -i "s|^  tag: .*|  tag: \"$GITHUB_SHA\"|" gitops/values-gitops.yaml
+            git diff
+            git commit -q -am "Final project GitOps: deploy readtrack ${GITHUB_SHA::7} to prod"
+            git push origin HEAD:main && exit 0
             sleep $((i * 5))
           done
           exit 1

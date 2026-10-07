@@ -29,7 +29,7 @@ output and the screenshots are rendered from the transcripts of my `run-labs*.sh
 | Argo CD AppProject + Application + GitOps values | [gitops/](gitops) |
 | Troubleshooting challenge (broken + fixed overlays, script) | [troubleshooting/](troubleshooting) |
 | CI/CD workflow | [.github/workflows/final-project.yml](../.github/workflows/final-project.yml) |
-| Green pipeline run | [run #7 - 37674093998](https://github.com/AbhiGandhi02/Devops-Assignment/actions/runs/37674093998) (all 12 jobs green) |
+| Green pipeline runs | [run #7 - 37674093998](https://github.com/AbhiGandhi02/Devops-Assignment/actions/runs/37674093998) (the one in the screenshots) and the latest [run #9 - 37676391734](https://github.com/AbhiGandhi02/Devops-Assignment/actions/runs/37676391734), all 12 jobs green |
 | Lab scripts that produced the screenshots | `run-labs.sh`, `run-labs-k8s.sh`, `run-labs-security.sh`, `run-labs-monitoring.sh`, `run-labs-gitops.sh`, `run-labs-cicd.sh`, `troubleshooting/run-troubleshooting.sh` |
 | Screenshots | [screenshots/](screenshots) - 65 images (`k21-01` ... `k21-65`) |
 

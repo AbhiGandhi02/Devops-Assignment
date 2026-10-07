@@ -1,0 +1,14 @@
+# Copy to terraform.tfvars and adjust. No credentials ever go in this file -
+# real AWS credentials come from `aws configure` / environment variables.
+project            = "readtrack"
+environment        = "dev"
+aws_region         = "ap-south-1"
+use_localstack     = true # false for real AWS
+enable_eks         = false # true on real AWS (EKS is LocalStack Pro only)
+kubernetes_version = "1.33"
+node_instance_type = "t3.medium"
+node_count = {
+  min     = 1
+  desired = 2
+  max     = 3
+}
